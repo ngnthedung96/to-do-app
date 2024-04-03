@@ -6,28 +6,20 @@ import "react-datepicker/dist/react-datepicker.css";
 import moment from "moment";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { UserStore } from "@/store/reducer/Users";
-import {
-  NoteStore,
-  addFilteredNotes,
-  toggleIsFiltered,
-} from "@/store/reducer/Notes";
-import { editIsShowNote } from "../store/reducer/Notes";
+import { NoteStore, fetchListNote } from "@/store/reducer/Notes";
 
-interface NoteType {
-  id: number;
-  note: string;
-  status: number;
-  dueDate?: number;
-  isShow: number;
-  idAssignee: number;
-}
 interface User {
   id: number;
   name: string;
 }
-export default function filter() {
+export default function filter({
+  limit,
+  page,
+}: {
+  limit: number;
+  page: number;
+}) {
   const dispatch = useAppDispatch();
-  const { listNote, listFilteredNote } = useAppSelector(NoteStore);
   // filter
   const [dateRangeFilter, setDateRangeFilter] = useState<(Date | null)[]>([
     new Date(),
@@ -39,68 +31,23 @@ export default function filter() {
   const [searchIdAssignee, setSearchIdAssignee] = useState(0);
   const { listUser } = useAppSelector(UserStore);
 
-  function filterDataMethod(): void {
-    const cloneListNote = JSON.parse(JSON.stringify(listNote));
-    const filteredArr = [];
-    const objCondition = {
-      checkTime: false,
-      checkStatus: false,
-      checkName: false,
-      checkAssignee: false,
-    };
+  async function filterDataMethod() {
+    let queryString: string = `?limit=${limit}&page=${page}`;
     if (searchNote) {
-      objCondition.checkName = true;
+      queryString += `&note=${searchNote}`;
     }
     if (startDateFilter && endDateFilter) {
-      objCondition.checkTime = true;
+      const startDate = moment(new Date(startDateFilter)).format("DD/MM/YYYY");
+      const endDate = moment(new Date(endDateFilter)).format("DD/MM/YYYY");
+      queryString += `&dueDate=${startDate}-${endDate}`;
     }
     if (Number(currentStatusFilter)) {
-      objCondition.checkStatus = true;
+      queryString += `&status=${currentStatusFilter}`;
     }
     if (Number(searchIdAssignee)) {
-      objCondition.checkAssignee = true;
+      queryString += `&idAssignee=${searchIdAssignee}`;
     }
-    for (let i = 0; i < cloneListNote.length; i++) {
-      const val = cloneListNote[i];
-      let checkErr = false;
-      if (objCondition.checkName) {
-        if (!val.note.includes(searchNote)) {
-          checkErr = true;
-        }
-      }
-      if (objCondition.checkTime) {
-        if (startDateFilter && endDateFilter) {
-          const startDateFilterUnix = moment(new Date(startDateFilter)).unix();
-          const endDateFilterUnix = moment(new Date(endDateFilter)).unix();
-          if (val.dueDate) {
-            if (
-              val.dueDate < startDateFilterUnix ||
-              val.dueDate > endDateFilterUnix
-            ) {
-              checkErr = true;
-            }
-          } else {
-            checkErr = true;
-          }
-        }
-      }
-      if (objCondition.checkStatus) {
-        if (val.status != currentStatusFilter) {
-          checkErr = true;
-        }
-      }
-      if (objCondition.checkAssignee) {
-        if (val.idAssignee != searchIdAssignee) {
-          checkErr = true;
-        }
-      }
-      if (!checkErr) {
-        filteredArr.push(val);
-      }
-    }
-
-    dispatch(addFilteredNotes([...filteredArr]));
-    dispatch(toggleIsFiltered(true));
+    const data = await dispatch(fetchListNote(queryString));
   }
   return (
     <div className="filter-div px-6 pt-4">

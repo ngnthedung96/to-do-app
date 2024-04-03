@@ -6,21 +6,11 @@ import moment from "moment";
 import { produce } from "immer";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { UserStore } from "@/store/reducer/Users";
-import {
-  editNote,
-  addNote,
-  NoteStore,
-  addFilteredNote,
-  editFilteredNote,
-  resetFilteredNote,
-} from "../store/reducer/Notes";
-
+import { editNote, addNote, NoteStore } from "../store/reducer/Notes";
 interface NoteType {
-  id: number;
   note: string;
   status: number;
   dueDate?: number;
-  isShow: number;
   idAssignee: number;
 }
 
@@ -41,6 +31,7 @@ export default function update({
   setNote,
   selectedUserId,
   setSelectedUserId,
+  setPage,
 }: {
   isEdit: boolean;
   setIsEdit: Function;
@@ -54,11 +45,13 @@ export default function update({
   setNote: Function;
   selectedUserId: number;
   setSelectedUserId: Function;
+  setPage: Function;
 }) {
   // redux
   // state
   const { listUser } = useAppSelector(UserStore);
-  const { listNote, listFilteredNote } = useAppSelector(NoteStore);
+  const { dataNotes } = useAppSelector(NoteStore);
+  const { listNote } = dataNotes;
 
   const dispatch = useAppDispatch();
 
@@ -94,17 +87,13 @@ export default function update({
   // functions
   function addNoteMethod(): void {
     if (defaultNote && Number(selectedUserId)) {
-      const newNote: NoteType = {
-        id: 0,
+      const newNote = {
         note: defaultNote,
-        status: 1,
+        idAssignee: Number(selectedUserId),
         dueDate: startDate ? moment(new Date(startDate)).unix() : 0,
-        isShow: 1,
-        idAssignee: selectedUserId,
       };
-      newNote.id = listNote.length + 1;
       dispatch(addNote(newNote));
-      dispatch(resetFilteredNote());
+      setPage(1);
       setNote("");
       setStartDate(null);
       setSelectedUserId(0);
@@ -118,22 +107,14 @@ export default function update({
     status: number
   ): void {
     if (id >= 0 && defaultNote) {
+      const dateUnix = dueDate ? moment(new Date(dueDate)).unix() : 0;
       dispatch(
         editNote({
           id,
-          dueDate,
+          note: defaultNote,
+          idAssignee: selectedUserId,
+          dueDate: dateUnix,
           status,
-          defaultNote,
-          selectedUserId,
-        })
-      );
-      dispatch(
-        editFilteredNote({
-          id,
-          dueDate,
-          status,
-          defaultNote,
-          selectedUserId,
         })
       );
       setNote("");
@@ -150,7 +131,7 @@ export default function update({
     if (selectedUserId > 0) {
       return selectedUserId;
     } else if (currentIdNote > 0) {
-      const note: NoteType | undefined = listFilteredNote.find((el, val) => {
+      const note: NoteType | undefined = listNote.find((el, val) => {
         return el.id == currentIdNote;
       });
       return note?.idAssignee;

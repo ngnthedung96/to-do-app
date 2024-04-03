@@ -1,143 +1,104 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "../store";
 import { produce } from "immer";
 import moment from "moment";
+import axios from "axios";
 // Define a type for the slice state
+interface dataNotes {
+  totalNote:number,
+  listNote:NoteType[],
+}
 interface initialState {
-  isFilter:boolean,
-  listNote: NoteType[],
-  listFilteredNote:NoteType[]
+  dataNotes:dataNotes,
 }
 interface NoteType {
   id: number;
   note: string;
   status: number;
   dueDate?: number;
-  isShow: number;
   idAssignee: number;
 }
 
 export const initialState:initialState = {
-  isFilter:false,
-  listNote: [
-   
-  ],
-  listFilteredNote:[],
+  dataNotes: {
+    totalNote:0,
+    listNote:[
+      {id:1,
+      note:"",
+      status:1,
+      idAssignee:1,
+    }
+    ],
+  },
 };
-
+export const fetchListNote = createAsyncThunk(
+  'notes/getListNote',
+  async (queryString: string, thunkAPI) => {
+    const response = await axios.get("http://localhost:3000/api/notes/get-list" + queryString)
+    return response.data
+  },
+)
+export const addNote = createAsyncThunk(
+  'notes/addNote',
+  async (requestBody: {note:string, idAssignee:number, dueDate?:number}, thunkAPI) => {
+    const response = await axios.post("http://localhost:3000/api/notes",requestBody)
+    return response.data
+  },
+)
+export const editNote = createAsyncThunk(
+  'notes/editNote',
+  async (requestBody: {id:number,note:string, idAssignee:number, dueDate?:number, status:number}, thunkAPI) => {
+    const {id,
+      note,
+      idAssignee,
+      dueDate,
+      status} = requestBody
+    const response = await axios.put("http://localhost:3000/api/notes/" + id,{
+      note,
+      idAssignee,
+      dueDate,
+      status
+    })
+    return response.data
+  },
+)
+export const deleteNote = createAsyncThunk(
+  'notes/editNote',
+  async (id: number, thunkAPI) => {
+    const response = await axios.delete("http://localhost:3000/api/notes/" + id)
+    return response.data
+  },
+)
 const Notes = createSlice({
   name: "Notes",
   initialState,
   reducers: {
-    addNote( state, action: PayloadAction<NoteType>): void {
-      const newNote = action.payload
-        state.listNote.push(newNote)
-    },
-    editNote(state, action: PayloadAction<{id: number, dueDate: Date | null, status: number, defaultNote:string, selectedUserId:number}> ): void {
-      const {id,
-        dueDate,
-        status,
-        defaultNote,
-        selectedUserId} = action.payload
-      const noteIndex = state.listNote.findIndex((el:NoteType)=>el.id == id)
-      const nextState = produce(state.listNote, (draft) => {
-        draft[noteIndex].note = defaultNote;
-        draft[noteIndex].dueDate = dueDate ? moment(new Date(dueDate)).unix() : 0;
-        draft[noteIndex].status = status;
-        if (selectedUserId) {
-          draft[noteIndex].idAssignee = selectedUserId;
-        }
-      });
-      state.listNote = nextState
-    },
-    deleteNote( state, action: PayloadAction<number>) {
-      const id = action.payload
-      const indexNote = state.listNote.findIndex((el) => {
-        return el.id == id;
-      });
-      const spliceArr = state.listNote.splice(indexNote, 1);
-    },
-    editIsShowNote(state,action:PayloadAction<{ id: number, value:number}>){
-      const {id, value} = action.payload
-      const formattedArr = JSON.parse(JSON.stringify(state.listNote))
-      const noteIndex = formattedArr.findIndex((el:NoteType)=>el.id == id)
-      if(noteIndex >=0){
-        const nextState = produce(state.listNote, (draft) => {
-          draft[noteIndex].isShow = value;
-        });
-        state.listNote = nextState
-      }
-
-    },
-    addFilteredNote( state, action: PayloadAction<NoteType>): void {
-      const newNote = action.payload
-      state.listFilteredNote.push(newNote)
-    },
-    editFilteredNote(state, action: PayloadAction<{id: number, dueDate: Date | null, status: number, defaultNote:string, selectedUserId:number}> ): void {
-      const {id,
-        dueDate,
-        status,
-        defaultNote,
-        selectedUserId} = action.payload
-        console.log(id)
-      const noteIndex = state.listFilteredNote.findIndex((el:NoteType)=>el.id == id)
-      const nextState = produce(state.listFilteredNote, (draft) => {
-        draft[noteIndex].note = defaultNote;
-        draft[noteIndex].dueDate = dueDate ? moment(new Date(dueDate)).unix() : 0;
-        draft[noteIndex].status = status;
-        if (selectedUserId) {
-          draft[noteIndex].idAssignee = selectedUserId;
-        }
-      });
-      state.listFilteredNote = nextState
-    },
-    deleteFilteredNote( state, action: PayloadAction<number>) {
-      const id = action.payload
-      const indexNote = state.listFilteredNote.findIndex((el) => {
-        return el.id == id;
-      });
-      const spliceArr = state.listFilteredNote.splice(indexNote, 1);
-    },
-    addFilteredNotes(state, action: PayloadAction<NoteType[]>): void {
-      const newNote = action.payload
-      state.listFilteredNote = newNote
-    },
-    editIsShowFilteredNote(state,action:PayloadAction<{ id: number, value:number}>){
-      const {id, value} = action.payload
-      const formattedArr = JSON.parse(JSON.stringify(state.listFilteredNote))
-      const noteIndex = formattedArr.findIndex((el:NoteType)=>el.id == id)
-      if(noteIndex >=0){
-        const nextState = produce(state.listFilteredNote, (draft) => {
-          draft[noteIndex].isShow = value;
-        });
-        state.listFilteredNote = nextState
-      }
-
-    },
-    resetFilteredNote(state){
-      state.listFilteredNote = state.listNote
-    },
-    toggleIsFiltered(state,action:PayloadAction<boolean>){
-      state.isFilter = action.payload
-    },
-    
   },
   extraReducers: (builder) => {
-  }
+    // Add reducers for additional action types here, and handle loading state as needed
+    builder.addCase(fetchListNote.fulfilled, (state, action) => {
+      const response = action.payload
+      const data:dataNotes = response.data
+      if(data){
+        state.dataNotes = data
+      }
+    })
+    builder.addCase(addNote.fulfilled, (state, action) => {
+      const response = action.payload
+      const data:NoteType = response.data
+      state.dataNotes.listNote.unshift(data)
+      state.dataNotes.listNote.splice(-1)
+    })
+    builder.addCase(editNote.fulfilled, (state, action) => {
+      const response = action.payload
+      const data:NoteType = response.data
+      const idNew = data.id
+      const {listNote} = state.dataNotes
+      const indexNote = listNote.findIndex((el,id)=>{return el.id == idNew})
+      listNote[indexNote] = data
+    })
+  },
 });
 
 export const NoteStore = (state: RootState) => state.Notes; // get state
-export const {
-  addNote,
-  editNote, 
-  deleteNote,
-  editIsShowNote,
-  addFilteredNote,
-  editFilteredNote,
-  deleteFilteredNote,
-  addFilteredNotes,
-  editIsShowFilteredNote,
-  resetFilteredNote,
-  toggleIsFiltered
-   } = Notes.actions
 export default Notes.reducer;

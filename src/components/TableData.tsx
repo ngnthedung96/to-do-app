@@ -4,8 +4,8 @@ import "react-datepicker/dist/react-datepicker.css";
 import moment from "moment";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { UserStore } from "@/store/reducer/Users";
-import { NoteStore, deleteFilteredNote } from "@/store/reducer/Notes";
-import { deleteNote, editIsShowFilteredNote } from "../store/reducer/Notes";
+import { NoteStore } from "@/store/reducer/Notes";
+import { deleteNote } from "../store/reducer/Notes";
 
 // status 1,2,3
 
@@ -14,7 +14,6 @@ interface NoteType {
   note: string;
   status: number;
   dueDate?: number;
-  isShow: number;
   idAssignee: number;
 }
 
@@ -28,6 +27,8 @@ export default function tableData({
   setSelectedUserId,
   limit,
   setLimit,
+  page,
+  setPage,
 }: {
   setNote: Function;
   setIdNote: Function;
@@ -38,10 +39,13 @@ export default function tableData({
   setSelectedUserId: Function;
   limit: number;
   setLimit: Function;
+  page: number;
+  setPage: Function;
 }) {
   // redux state
   const { listUser } = useAppSelector(UserStore);
-  const { listNote, listFilteredNote } = useAppSelector(NoteStore);
+  const { dataNotes } = useAppSelector(NoteStore);
+  const { listNote, totalNote } = dataNotes;
   const dispatch = useAppDispatch();
   // functions
   function getAssignee(id: number) {
@@ -52,7 +56,6 @@ export default function tableData({
   }
   function deleteNoteMethod(id: number) {
     dispatch(deleteNote(id));
-    dispatch(deleteFilteredNote(id));
     setNote("");
     if (isEdit) {
       setIsEdit(false);
@@ -68,58 +71,20 @@ export default function tableData({
     }
   }
   function nextPage() {
-    const duplicateArr = JSON.parse(JSON.stringify(listFilteredNote));
-    const reverseNotes = duplicateArr.reverse();
-    const indexLastShowNote = reverseNotes.findLastIndex((el: NoteType) => {
-      return el.isShow;
-    });
-    if (indexLastShowNote < listFilteredNote.length - 1) {
-      reverseNotes.map((el: NoteType, index: number) => {
-        const endIndex = indexLastShowNote + limit;
-        if (index > indexLastShowNote && index <= endIndex) {
-          dispatch(
-            editIsShowFilteredNote({
-              id: el.id,
-              value: 1,
-            })
-          );
-        } else {
-          dispatch(
-            editIsShowFilteredNote({
-              id: el.id,
-              value: 0,
-            })
-          );
-        }
-      });
+    const end = Math.ceil(totalNote / limit);
+    if (page < end) {
+      const nextPage = page + 1;
+      setPage(nextPage);
     }
   }
   function previousPage() {
-    const duplicateArr = JSON.parse(JSON.stringify(listFilteredNote));
-    const reverseNotes = duplicateArr.reverse();
-    const indexFirstShowNote = reverseNotes.findIndex((el: NoteType) => {
-      return el.isShow;
-    });
-    if (indexFirstShowNote > 0) {
-      reverseNotes.map((el: NoteType, index: number) => {
-        const endIndex = indexFirstShowNote - limit;
-        if (index < indexFirstShowNote && index >= endIndex) {
-          dispatch(
-            editIsShowFilteredNote({
-              id: el.id,
-              value: 1,
-            })
-          );
-        } else {
-          dispatch(
-            editIsShowFilteredNote({
-              id: el.id,
-              value: 0,
-            })
-          );
-        }
-      });
+    if (page > 1) {
+      const previousPage = page - 1;
+      setPage(previousPage);
     }
+  }
+  function goToPage(numberPage: number) {
+    setPage(numberPage);
   }
 
   return (
@@ -157,76 +122,68 @@ export default function tableData({
             </tr>
           </thead>
           <tbody>
-            {[...listFilteredNote]
-              .reverse()
-              .map((noteObj: NoteType, index: number) =>
-                noteObj.isShow ? (
-                  <tr
-                    key={index}
-                    className="bg-white border-b dark:bg-gray-800 dark:border-gray-700"
-                  >
-                    <td
-                      scope="row"
-                      className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
-                    >
-                      {noteObj.note}
-                    </td>
-                    <td
-                      scope="row"
-                      className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
-                    >
-                      {getAssignee(noteObj.idAssignee)?.name}
-                    </td>
-                    <td className="px-6 py-4">
-                      {convertStatusText(noteObj.status)}
-                    </td>
-                    <td className="px-6 py-4">
-                      {noteObj.dueDate
-                        ? moment
-                            .unix(noteObj.dueDate)
-                            .format("DD/MM/YYYY HH:mm")
-                        : ""}
-                    </td>
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => {
-                          setIsEdit(true);
-                          setNote(noteObj.note);
-                          setStatus(noteObj.status);
-                          if (noteObj.dueDate) {
-                            setStartDate(
-                              new Date(
+            {[...listNote].map((noteObj: NoteType, index: number) => (
+              <tr
+                key={index}
+                className="bg-white border-b dark:bg-gray-800 dark:border-gray-700"
+              >
+                <td
+                  scope="row"
+                  className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
+                >
+                  {noteObj.note}
+                </td>
+                <td
+                  scope="row"
+                  className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
+                >
+                  {getAssignee(noteObj.idAssignee)?.name}
+                </td>
+                <td className="px-6 py-4">
+                  {convertStatusText(noteObj.status)}
+                </td>
+                <td className="px-6 py-4">
+                  {noteObj.dueDate
+                    ? moment.unix(noteObj.dueDate).format("DD/MM/YYYY HH:mm")
+                    : ""}
+                </td>
+                <td className="px-6 py-4">
+                  <button
+                    onClick={() => {
+                      setIsEdit(true);
+                      setNote(noteObj.note);
+                      setStatus(noteObj.status);
+                      if (noteObj.dueDate) {
+                        setStartDate(
+                          new Date(
+                            moment
+                              .unix(noteObj.dueDate)
+                              .format("YYYY/MM/DD HH:mm")
+                          )
+                            ? new Date(
                                 moment
                                   .unix(noteObj.dueDate)
                                   .format("YYYY/MM/DD HH:mm")
                               )
-                                ? new Date(
-                                    moment
-                                      .unix(noteObj.dueDate)
-                                      .format("YYYY/MM/DD HH:mm")
-                                  )
-                                : null
-                            );
-                          }
-                          setIdNote(noteObj.id);
-                          setSelectedUserId(0);
-                        }}
-                        className="bg-blue-500 me-3 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full"
-                      >
-                        Chỉnh sửa
-                      </button>
-                      <button
-                        onClick={() => deleteNoteMethod(noteObj.id)}
-                        className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full"
-                      >
-                        Xóa
-                      </button>
-                    </td>
-                  </tr>
-                ) : (
-                  <tr key={index}></tr>
-                )
-              )}
+                            : null
+                        );
+                      }
+                      setIdNote(noteObj.id);
+                      setSelectedUserId(noteObj.idAssignee);
+                    }}
+                    className="bg-blue-500 me-3 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full"
+                  >
+                    Chỉnh sửa
+                  </button>
+                  <button
+                    onClick={() => deleteNoteMethod(noteObj.id)}
+                    className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full"
+                  >
+                    Xóa
+                  </button>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
 
@@ -252,6 +209,25 @@ export default function tableData({
                 </svg>
               </span>
             </li>
+            {Array.from(Array(Math.ceil(totalNote / limit)), (e, i) => {
+              return (
+                <li
+                  key={i}
+                  onClick={() => {
+                    goToPage(i + 1);
+                  }}
+                >
+                  <span
+                    className={
+                      (page == i + 1 ? "bg-grey" : "bg-white") +
+                      " flex items-center justify-center px-3 h-8 ms-0 leading-tight text-gray-500  border border-e-0 border-gray-300  hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
+                    }
+                  >
+                    {i + 1}
+                  </span>
+                </li>
+              );
+            })}
             <li onClick={nextPage}>
               <span className="flex items-center justify-center px-3 h-8 leading-tight text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
                 <span className="sr-only">Next</span>
