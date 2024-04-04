@@ -4,10 +4,14 @@ import "react-datepicker/dist/react-datepicker.css";
 import moment from "moment";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { UserStore } from "@/store/reducer/Users";
-import { NoteStore } from "@/store/reducer/Notes";
+import { NoteStore, fetchListNote } from "@/store/reducer/Notes";
 import { deleteNote } from "../store/reducer/Notes";
 
 // status 1,2,3
+interface User {
+  id: number;
+  name: string;
+}
 
 interface NoteType {
   id: number;
@@ -15,6 +19,7 @@ interface NoteType {
   status: number;
   dueDate?: number;
   idAssignee: number;
+  user?: User;
 }
 
 export default function tableData({
@@ -29,6 +34,10 @@ export default function tableData({
   setLimit,
   page,
   setPage,
+  searchNote,
+  dateRangeFilter,
+  currentStatusFilter,
+  searchIdAssignee,
 }: {
   setNote: Function;
   setIdNote: Function;
@@ -41,6 +50,10 @@ export default function tableData({
   setLimit: Function;
   page: number;
   setPage: Function;
+  searchNote: string;
+  dateRangeFilter: (Date | null)[];
+  currentStatusFilter: number;
+  searchIdAssignee: number;
 }) {
   // redux state
   const { listUser } = useAppSelector(UserStore);
@@ -48,11 +61,20 @@ export default function tableData({
   const { listNote, totalNote } = dataNotes;
   const dispatch = useAppDispatch();
   // functions
-  function getAssignee(id: number) {
-    const user = listUser.find((user, i) => {
-      return user.id == id;
-    });
-    return user;
+  function getAssignee(note: NoteType) {
+    let userName = "";
+    const { id, user, idAssignee } = note;
+    if (!user) {
+      const findedUser = listUser.find((user, i) => {
+        return user.id == idAssignee;
+      });
+      if (findedUser) {
+        userName = findedUser.name;
+      }
+    } else {
+      userName = user.name;
+    }
+    return userName;
   }
   function deleteNoteMethod(id: number) {
     dispatch(deleteNote(id));
@@ -86,6 +108,28 @@ export default function tableData({
   function goToPage(numberPage: number) {
     setPage(numberPage);
   }
+  async function getList() {
+    const [startDateFilter, endDateFilter] = dateRangeFilter;
+    let queryString: string = `?limit=${limit}&page=${page}`;
+    if (searchNote) {
+      queryString += `&note=${searchNote}`;
+    }
+    if (startDateFilter && endDateFilter) {
+      const startDate = moment(new Date(startDateFilter)).format("DD/MM/YYYY");
+      const endDate = moment(new Date(endDateFilter)).format("DD/MM/YYYY");
+      queryString += `&dueDate=${startDate}-${endDate}`;
+    }
+    if (Number(currentStatusFilter)) {
+      queryString += `&status=${currentStatusFilter}`;
+    }
+    if (Number(searchIdAssignee)) {
+      queryString += `&idAssignee=${searchIdAssignee}`;
+    }
+    const data = await dispatch(fetchListNote(queryString));
+  }
+  useEffect(() => {
+    getList();
+  }, [page, limit]);
 
   return (
     <div className="px-6 pt-4 pb-2">
@@ -137,7 +181,7 @@ export default function tableData({
                   scope="row"
                   className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
                 >
-                  {getAssignee(noteObj.idAssignee)?.name}
+                  {getAssignee(noteObj)}
                 </td>
                 <td className="px-6 py-4">
                   {convertStatusText(noteObj.status)}

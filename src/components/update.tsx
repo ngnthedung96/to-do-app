@@ -67,7 +67,7 @@ export default function update({
     <div className="edit-div">
       <select
         id="select-status"
-        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500  p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+        className="me-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500  p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
         value={currentStatus}
         onChange={(e) => setStatus(Number(e.target.value))}
       >
@@ -78,9 +78,15 @@ export default function update({
       </select>
       <button
         onClick={() => editNoteMethod(currentIdNote, startDate, currentStatus)}
-        className="bg-green-500 me-3 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full"
+        className="bg-green-500 me-2 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full"
       >
         Lưu
+      </button>
+      <button
+        onClick={() => deleteEdit()}
+        className="bg-red-500 me-2 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full"
+      >
+        Hủy
       </button>
     </div>
   );
@@ -126,6 +132,13 @@ export default function update({
     } else {
       alert("Vui lòng nhập đẩy đủ ghi chú");
     }
+  }
+  function deleteEdit() {
+    setNote("");
+    setIsEdit(false);
+    setSelectedUserId(0);
+    setStartDate(null);
+    setIdNote(-1);
   }
   function checkValueSelectAssignee() {
     if (selectedUserId > 0) {

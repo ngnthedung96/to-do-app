@@ -6,7 +6,9 @@ import Update from "@/components/update";
 import Validate from "@/components/TestValidate";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { NoteStore, fetchListNote } from "@/store/reducer/Notes";
-
+import { fetchAllUser } from "@/store/reducer/Users";
+import moment from "moment";
+import { addDays } from "date-fns";
 interface NoteType {
   id: number;
   note: string;
@@ -21,6 +23,15 @@ export default function Home() {
   const { dataNotes } = useAppSelector(NoteStore);
   const { listNote, totalNote } = dataNotes;
   const dispatch = useAppDispatch();
+  // filter
+  const [dateRangeFilter, setDateRangeFilter] = useState<(Date | null)[]>([
+    new Date(),
+    addDays(new Date(), 5),
+  ]);
+  const [startDateFilter, endDateFilter] = dateRangeFilter;
+  const [currentStatusFilter, setStatusFilter] = useState(0);
+  const [searchNote, setSearchNote] = useState("");
+  const [searchIdAssignee, setSearchIdAssignee] = useState(0);
   // state
   const [limit, setLimit] = useState(3);
   const [page, setPage] = useState(1);
@@ -34,11 +45,11 @@ export default function Home() {
   const [startDate, setStartDate] = useState<Date | null>(null);
 
   useEffect(() => {
-    getList();
-  }, [page, limit]);
+    getAllUser();
+  }, []);
 
-  async function getList() {
-    const data = await dispatch(fetchListNote(`?limit=${limit}&page=${page}`));
+  async function getAllUser() {
+    const data = await dispatch(fetchAllUser());
   }
 
   return (
@@ -47,7 +58,19 @@ export default function Home() {
         <div className="px-6 py-4">
           <div className="font-bold text-xl mb-2">Todo ({totalNote})</div>
         </div>
-        <Filter limit={limit} page={page} />
+        <Filter
+          limit={limit}
+          page={page}
+          dateRangeFilter={dateRangeFilter}
+          setDateRangeFilter={setDateRangeFilter}
+          currentStatusFilter={currentStatusFilter}
+          setStatusFilter={setStatusFilter}
+          searchNote={searchNote}
+          setSearchNote={setSearchNote}
+          searchIdAssignee={searchIdAssignee}
+          setSearchIdAssignee={setSearchIdAssignee}
+          setPage={setPage}
+        />
         <Update
           isEdit={isEdit}
           setIsEdit={setIsEdit}
@@ -76,6 +99,10 @@ export default function Home() {
           setLimit={setLimit}
           page={page}
           setPage={setPage}
+          searchNote={searchNote}
+          dateRangeFilter={dateRangeFilter}
+          currentStatusFilter={currentStatusFilter}
+          searchIdAssignee={searchIdAssignee}
         />
       </div>
     </main>

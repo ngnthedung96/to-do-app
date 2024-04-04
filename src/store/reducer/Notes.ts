@@ -23,50 +23,65 @@ export const initialState:initialState = {
   dataNotes: {
     totalNote:0,
     listNote:[
-      {id:1,
-      note:"",
-      status:1,
-      idAssignee:1,
-    }
+      
     ],
   },
 };
 export const fetchListNote = createAsyncThunk(
   'notes/getListNote',
   async (queryString: string, thunkAPI) => {
-    const response = await axios.get("http://localhost:3000/api/notes/get-list" + queryString)
-    return response.data
+    try{
+      const response = await axios.get("http://localhost:3000/api/notes/get-list" + queryString)
+      return response
+    }catch(err:any){
+      return err.response
+    }
   },
 )
 export const addNote = createAsyncThunk(
   'notes/addNote',
   async (requestBody: {note:string, idAssignee:number, dueDate?:number}, thunkAPI) => {
-    const response = await axios.post("http://localhost:3000/api/notes",requestBody)
-    return response.data
+    try{
+      const response = await axios.post("http://localhost:3000/api/notes",requestBody)
+      return response
+    }catch(err:any){
+      return err.response
+    }
   },
 )
 export const editNote = createAsyncThunk(
   'notes/editNote',
   async (requestBody: {id:number,note:string, idAssignee:number, dueDate?:number, status:number}, thunkAPI) => {
-    const {id,
-      note,
-      idAssignee,
-      dueDate,
-      status} = requestBody
-    const response = await axios.put("http://localhost:3000/api/notes/" + id,{
-      note,
-      idAssignee,
-      dueDate,
-      status
-    })
-    return response.data
+    try{
+      const {id,
+        note,
+        idAssignee,
+        dueDate,
+        status} = requestBody
+      const response = await axios.put("http://localhost:3000/api/notes/" + id,{
+        note,
+        idAssignee,
+        dueDate,
+        status
+      })
+      return{newData:requestBody, response} 
+    }
+    catch(err:any){
+      return err.response
+    }
+    
   },
 )
 export const deleteNote = createAsyncThunk(
-  'notes/editNote',
+  'notes/deleteNote',
   async (id: number, thunkAPI) => {
-    const response = await axios.delete("http://localhost:3000/api/notes/" + id)
-    return response.data
+    try{
+      const response = await axios.delete("http://localhost:3000/api/notes/" + id)
+      return {id,responseData:response}
+    } 
+    catch(err:any){
+      return err.response
+    }
   },
 )
 const Notes = createSlice({
@@ -75,27 +90,54 @@ const Notes = createSlice({
   reducers: {
   },
   extraReducers: (builder) => {
-    // Add reducers for additional action types here, and handle loading state as needed
+    // fetch data
     builder.addCase(fetchListNote.fulfilled, (state, action) => {
       const response = action.payload
-      const data:dataNotes = response.data
-      if(data){
+      const {error,message, data}:{error:boolean,message:string,data:dataNotes} = response.data
+      if(!error){
         state.dataNotes = data
+      }else{
+        alert(message)
       }
     })
+    // add data
     builder.addCase(addNote.fulfilled, (state, action) => {
       const response = action.payload
-      const data:NoteType = response.data
-      state.dataNotes.listNote.unshift(data)
-      state.dataNotes.listNote.splice(-1)
+      const {error,message, data}:{error:boolean,message:string,data:NoteType} = response.data
+      if(!error){
+        state.dataNotes.listNote.unshift(data)
+        state.dataNotes.listNote.splice(-1)
+        state.dataNotes.totalNote++
+      }else{
+        alert(message)
+      }
     })
+    // edit data
     builder.addCase(editNote.fulfilled, (state, action) => {
+      const {response,newData} = action.payload
+      const {error,message, data}:{error:boolean,message:string,data:NoteType} = response.data
+      if(!error){
+        const idNew = newData.id
+        const {listNote} = state.dataNotes
+        const indexNote = listNote.findIndex((el,index)=>{return el.id == idNew})
+        listNote[indexNote] = newData
+      }else{
+        alert(message)
+      }
+    })
+    // delete data
+    builder.addCase(deleteNote.fulfilled, (state, action) => {
       const response = action.payload
-      const data:NoteType = response.data
-      const idNew = data.id
-      const {listNote} = state.dataNotes
-      const indexNote = listNote.findIndex((el,id)=>{return el.id == idNew})
-      listNote[indexNote] = data
+      const {id,responseData} = response
+      const {error,message}:{error:boolean,message:string} = responseData.data
+      if(!error){
+        const {listNote} = state.dataNotes
+        const indexNote = listNote.findIndex((el,index)=>{return el.id == id})
+        listNote.splice(indexNote,1)
+        state.dataNotes.totalNote--
+      }else{
+        alert(message)
+      }
     })
   },
 });

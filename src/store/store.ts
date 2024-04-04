@@ -2,7 +2,11 @@ import { configureStore } from '@reduxjs/toolkit'
 import { rootReducer } from "./reducer/RootReducer";
 
 export const store = configureStore({
-  reducer:rootReducer
+  reducer:rootReducer,
+  middleware: getDefaultMiddleware =>
+    getDefaultMiddleware({
+      serializableCheck: false,
+    }),
 })
 
 // Infer the `RootState` and `AppDispatch` types from the store itself

@@ -1,13 +1,18 @@
 import { PrismaClient } from "@prisma/client";
 import { NextRequest, NextResponse } from 'next/server'
+import {z} from "zod"
+const addUserScheme = z.object({
+  name: z.string(),
+})
 
 const prisma = new PrismaClient()
 export async function POST(request: NextRequest, response: NextResponse) {
   const res = await request.json()
   const {name} = res
-  if(!name
+  const validation = addUserScheme.safeParse(res)
+  if(!validation.success
   ){
-    return NextResponse.json({ status:402, message:"Thiếu dữ liệu"}, {status:402})
+    return NextResponse.json({ status:402,error:true, message:"Thiếu dữ liệu"}, {status:402})
   }
   const newUser =  await prisma.users.create({
     data: {

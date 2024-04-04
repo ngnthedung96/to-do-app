@@ -1,6 +1,5 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { addDays } from "date-fns";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import moment from "moment";
@@ -15,39 +14,55 @@ interface User {
 export default function filter({
   limit,
   page,
+  dateRangeFilter,
+  setDateRangeFilter,
+  currentStatusFilter,
+  setStatusFilter,
+  searchNote,
+  setSearchNote,
+  searchIdAssignee,
+  setSearchIdAssignee,
+  setPage,
 }: {
   limit: number;
   page: number;
+  dateRangeFilter: (Date | null)[];
+  setDateRangeFilter: Function;
+  currentStatusFilter: number;
+  setStatusFilter: Function;
+  searchNote: string;
+  setSearchNote: Function;
+  searchIdAssignee: number;
+  setSearchIdAssignee: Function;
+  setPage: Function;
 }) {
-  const dispatch = useAppDispatch();
-  // filter
-  const [dateRangeFilter, setDateRangeFilter] = useState<(Date | null)[]>([
-    new Date(),
-    addDays(new Date(), 5),
-  ]);
-  const [startDateFilter, endDateFilter] = dateRangeFilter;
-  const [currentStatusFilter, setStatusFilter] = useState(0);
-  const [searchNote, setSearchNote] = useState("");
-  const [searchIdAssignee, setSearchIdAssignee] = useState(0);
   const { listUser } = useAppSelector(UserStore);
-
+  const [startDateFilter, endDateFilter] = dateRangeFilter;
+  const dispatch = useAppDispatch();
   async function filterDataMethod() {
-    let queryString: string = `?limit=${limit}&page=${page}`;
-    if (searchNote) {
-      queryString += `&note=${searchNote}`;
+    if (page != 1) {
+      setPage(1);
+    } else {
+      const [startDateFilter, endDateFilter] = dateRangeFilter;
+      let queryString: string = `?limit=${limit}&page=1`;
+      if (searchNote) {
+        queryString += `&note=${searchNote}`;
+      }
+      if (startDateFilter && endDateFilter) {
+        const startDate = moment(new Date(startDateFilter)).format(
+          "DD/MM/YYYY"
+        );
+        const endDate = moment(new Date(endDateFilter)).format("DD/MM/YYYY");
+        queryString += `&dueDate=${startDate}-${endDate}`;
+      }
+      if (Number(currentStatusFilter)) {
+        queryString += `&status=${currentStatusFilter}`;
+      }
+      if (Number(searchIdAssignee)) {
+        queryString += `&idAssignee=${searchIdAssignee}`;
+      }
+      const data = await dispatch(fetchListNote(queryString));
     }
-    if (startDateFilter && endDateFilter) {
-      const startDate = moment(new Date(startDateFilter)).format("DD/MM/YYYY");
-      const endDate = moment(new Date(endDateFilter)).format("DD/MM/YYYY");
-      queryString += `&dueDate=${startDate}-${endDate}`;
-    }
-    if (Number(currentStatusFilter)) {
-      queryString += `&status=${currentStatusFilter}`;
-    }
-    if (Number(searchIdAssignee)) {
-      queryString += `&idAssignee=${searchIdAssignee}`;
-    }
-    const data = await dispatch(fetchListNote(queryString));
   }
   return (
     <div className="filter-div px-6 pt-4">
