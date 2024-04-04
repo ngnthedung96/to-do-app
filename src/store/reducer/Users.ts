@@ -9,7 +9,7 @@ interface User{
   id:number,
   name:string
 }
-const apiUrl =  process.env.NODE_ENV == "production"?"https://to-do-4z1k9iq89-ngnthedungs-projects.vercel.app":"http://localhost:3000"
+const apiUrl =  process.env.NODE_ENV == "production"?"https://to-do-app-lyart-five.vercel.app":"http://localhost:3000"
 export const fetchAllUser = createAsyncThunk(
   'notes/getAllUser',
   async (payload,thunkAPI) => {

@@ -18,7 +18,7 @@ interface NoteType {
   dueDate?: number;
   idAssignee: number;
 }
-const apiUrl =  process.env.NODE_ENV == "production"?"https://to-do-4z1k9iq89-ngnthedungs-projects.vercel.app":"http://localhost:3000"
+const apiUrl =  process.env.NODE_ENV == "production"?"https://to-do-app-lyart-five.vercel.app":"http://localhost:3000"
 export const initialState:initialState = {
   dataNotes: {
     totalNote:0,
