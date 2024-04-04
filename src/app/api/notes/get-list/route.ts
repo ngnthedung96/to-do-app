@@ -47,6 +47,7 @@ export async function GET(request: NextRequest, response: NextResponse) {
     ){
       return NextResponse.json({ status:402,error:true, message:"Thiếu dữ liệu"}, {status:402})
     }
+    const currentTime = moment().unix()
     let objCondition:any = {
     }
     if(dueDate||
@@ -58,6 +59,37 @@ export async function GET(request: NextRequest, response: NextResponse) {
           contains:note
         }
       }else{
+        if(status){
+          const formattedStatus = Number(status)
+          if(formattedStatus){
+            if(formattedStatus == 4){
+              objCondition = {
+                ...objCondition,
+                AND :[
+                  {
+                    NOT:{
+                      dueDate:0
+                    }
+                  },
+                  {
+                    NOT:{
+                      status:3
+                    }
+                  },
+                  {
+                    dueDate:{
+                      lt:currentTime
+                    }
+                  },
+
+                ]
+              }
+            }
+            else if(formattedStatus > 0 && formattedStatus < 4){
+              objCondition.status = Number(status)
+            }
+          }
+        }
         if(dueDate){
           const dateArr = dueDate.split("-")
           const startDate = dateArr[0];
@@ -71,9 +103,6 @@ export async function GET(request: NextRequest, response: NextResponse) {
           if(startDate && endDate){
             objCondition = {...objCondition, AND: [{ dueDate: { lte:Number(formattedEndDate)} }, { dueDate: { gte:Number(formattedStartDate)} }]}
           }
-        }
-        if(status){
-          objCondition.status = Number(status)
         }
         if(idAssignee){
           objCondition.idAssignee = Number(idAssignee)

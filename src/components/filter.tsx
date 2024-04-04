@@ -90,6 +90,7 @@ export default function filter({
         <option value="1">Khởi tạo</option>
         <option value="2">Đang thực hiện</option>
         <option value="3">Đã hoàn thành</option>
+        <option value="4">Đã hết hạn</option>
       </select>
 
       <select

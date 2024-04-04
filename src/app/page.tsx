@@ -25,10 +25,9 @@ export default function Home() {
   const dispatch = useAppDispatch();
   // filter
   const [dateRangeFilter, setDateRangeFilter] = useState<(Date | null)[]>([
-    new Date(),
-    addDays(new Date(), 5),
+    null,
+    null,
   ]);
-  const [startDateFilter, endDateFilter] = dateRangeFilter;
   const [currentStatusFilter, setStatusFilter] = useState(0);
   const [searchNote, setSearchNote] = useState("");
   const [searchIdAssignee, setSearchIdAssignee] = useState(0);

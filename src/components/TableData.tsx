@@ -186,7 +186,13 @@ export default function tableData({
                 <td className="px-6 py-4">
                   {convertStatusText(noteObj.status)}
                 </td>
-                <td className="px-6 py-4">
+                <td
+                  className={
+                    noteObj.dueDate && noteObj.dueDate > moment().unix()
+                      ? ""
+                      : "text-red-500"
+                  }
+                >
                   {noteObj.dueDate
                     ? moment.unix(noteObj.dueDate).format("DD/MM/YYYY HH:mm")
                     : ""}
