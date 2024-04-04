@@ -41,7 +41,7 @@ export default function Home() {
   const [isEdit, setIsEdit] = useState(false);
 
   const [defaultNote, setNote] = useState("");
-  // select date
+  // select dates
   const [startDate, setStartDate] = useState<Date | null>(null);
 
   useEffect(() => {
