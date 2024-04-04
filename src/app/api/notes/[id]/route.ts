@@ -41,14 +41,19 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const {note,
       dueDate,
       idAssignee,
-      status} = res
+      status}:{
+        note:string,
+        dueDate:number|undefined,
+        idAssignee:number|undefined,
+        status:number|undefined
+      } = res
     const id: number = Number(params.id);
     const validation = await editNoteScheme.parseAsync({
-      id:Number(id),
-      dueDate:dueDate?Number(dueDate):undefined,
-      idAssignee:Number(idAssignee),
+      id:id,
+      dueDate:dueDate?(dueDate):undefined,
+      idAssignee:idAssignee,
       note,
-      status:Number(status)
+      status:status
     })
     const specificNote = await prisma.notes.update({
       where: {

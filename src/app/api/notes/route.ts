@@ -14,7 +14,13 @@ const addNoteScheme = z.object({
     }
     return true
   }),
-  note: z.string()
+  note: z.string(),
+  status:z.number().refine((status)=>{
+    if(status<1 && status>3){
+      return false
+    }
+    return true
+  })
 })
 const prisma = new PrismaClient()
 export async function POST(request: NextRequest, response: NextResponse) {
@@ -22,16 +28,21 @@ export async function POST(request: NextRequest, response: NextResponse) {
     const res = await request.json()
     const {note,
       dueDate,
-      idAssignee} = res
+      idAssignee,
+      status} = res
+    const formattedDueDate = Number(dueDate)
+    const formattedIdAssignee = Number(idAssignee)
+    const formattedStatus = Number(status)
     const validation = await addNoteScheme.parseAsync({
-        dueDate:dueDate?Number(dueDate):undefined,
-        idAssignee:Number(idAssignee),
-        note
+        dueDate:formattedDueDate?formattedDueDate:undefined,
+        idAssignee:formattedIdAssignee,
+        note,
+        status:formattedStatus
     })
     const newNote =  await prisma.notes.create({
       data: {
         note,
-        status:1,
+        status,
         dueDate: dueDate?dueDate:0,
         idAssignee,
       },

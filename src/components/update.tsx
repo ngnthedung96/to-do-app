@@ -65,17 +65,6 @@ export default function update({
     </button>
   ) : (
     <div className="edit-div">
-      <select
-        id="select-status"
-        className="me-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500  p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-        value={currentStatus}
-        onChange={(e) => setStatus(Number(e.target.value))}
-      >
-        <option value="0">Chọn trạng thái</option>
-        <option value="1">Khởi tạo</option>
-        <option value="2">Đang thực hiện</option>
-        <option value="3">Đã hoàn thành</option>
-      </select>
       <button
         onClick={() => editNoteMethod(currentIdNote, startDate, currentStatus)}
         className="bg-green-500 me-2 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full"
@@ -92,16 +81,18 @@ export default function update({
   );
   // functions
   function addNoteMethod(): void {
-    if (defaultNote && Number(selectedUserId)) {
+    if (defaultNote && Number(selectedUserId) && Number(currentStatus)) {
       const newNote = {
         note: defaultNote,
         idAssignee: Number(selectedUserId),
         dueDate: startDate ? moment(new Date(startDate)).unix() : 0,
+        status: currentStatus,
       };
       dispatch(addNote(newNote));
       setPage(1);
       setNote("");
       setStartDate(null);
+      setStatus(-1);
       setSelectedUserId(0);
     } else {
       alert("Vui lòng nhập đẩy đủ ghi chú và người thực hiện");
@@ -189,6 +180,17 @@ export default function update({
             {user.name}
           </option>
         ))}
+      </select>
+      <select
+        id="select-status"
+        className="me-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500  p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+        value={currentStatus}
+        onChange={(e) => setStatus(Number(e.target.value))}
+      >
+        <option value="0">Chọn trạng thái</option>
+        <option value="1">Khởi tạo</option>
+        <option value="2">Đang thực hiện</option>
+        <option value="3">Đã hoàn thành</option>
       </select>
       {renderButton}
     </div>
