@@ -23,7 +23,6 @@ export const initialState:initialState = {
   dataNotes: {
     totalNote:0,
     listNote:[
-      
     ],
   },
 };
