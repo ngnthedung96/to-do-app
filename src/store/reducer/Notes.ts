@@ -18,7 +18,7 @@ interface NoteType {
   dueDate?: number;
   idAssignee: number;
 }
-
+const apiUrl =  process.env.NODE_ENV == "production"?"https://to-do-4z1k9iq89-ngnthedungs-projects.vercel.app":"http://localhost:3000"
 export const initialState:initialState = {
   dataNotes: {
     totalNote:0,
@@ -31,7 +31,7 @@ export const fetchListNote = createAsyncThunk(
   'notes/getListNote',
   async (queryString: string, thunkAPI) => {
     try{
-      const response = await axios.get("http://localhost:3000/api/notes/get-list" + queryString)
+      const response = await axios.get(`${apiUrl}/api/notes/get-list` + queryString)
       return response
     }catch(err:any){
       return err.response
@@ -42,7 +42,7 @@ export const addNote = createAsyncThunk(
   'notes/addNote',
   async (requestBody: {note:string, idAssignee:number, dueDate?:number}, thunkAPI) => {
     try{
-      const response = await axios.post("http://localhost:3000/api/notes",requestBody)
+      const response = await axios.post(`${apiUrl}/api/notes`,requestBody)
       return response
     }catch(err:any){
       return err.response
@@ -58,7 +58,7 @@ export const editNote = createAsyncThunk(
         idAssignee,
         dueDate,
         status} = requestBody
-      const response = await axios.put("http://localhost:3000/api/notes/" + id,{
+      const response = await axios.put(`${apiUrl}/api/notes/` + id,{
         note,
         idAssignee,
         dueDate,
@@ -76,7 +76,7 @@ export const deleteNote = createAsyncThunk(
   'notes/deleteNote',
   async (id: number, thunkAPI) => {
     try{
-      const response = await axios.delete("http://localhost:3000/api/notes/" + id)
+      const response = await axios.delete(`${apiUrl}/api/notes/` + id)
       return {id,responseData:response}
     } 
     catch(err:any){

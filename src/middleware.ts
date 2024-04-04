@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-const allowedOrigins = ["http://localhost:3000","https://to-do-4z1k9iq89-ngnthedungs-projects.vercel.app"]
+const allowedOrigins = process.env.NODE_ENV == "production" ? ["https://to-do-4z1k9iq89-ngnthedungs-projects.vercel.app"]:["http://localhost:3000",]
 export function middleware(request:NextRequest){
   // retrieve the current response
   const res = NextResponse.next()

@@ -9,11 +9,12 @@ interface User{
   id:number,
   name:string
 }
+const apiUrl =  process.env.NODE_ENV == "production"?"https://to-do-4z1k9iq89-ngnthedungs-projects.vercel.app":"http://localhost:3000"
 export const fetchAllUser = createAsyncThunk(
   'notes/getAllUser',
   async (payload,thunkAPI) => {
     try{
-      const response = await axios.get("http://localhost:3000/api/users/get-all")
+      const response = await axios.get(`${apiUrl}/api/users/get-all`)
       return response
     }catch(err:any){
       return err.response
