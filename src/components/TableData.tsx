@@ -166,76 +166,77 @@ export default function tableData({
             </tr>
           </thead>
           <tbody>
-            {[...listNote].map((noteObj: NoteType, index: number) => (
-              <tr
-                key={index}
-                className="bg-white border-b dark:bg-gray-800 dark:border-gray-700"
-              >
-                <td
-                  scope="row"
-                  className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
+            {Array.isArray(listNote) &&
+              [...listNote].map((noteObj: NoteType, index: number) => (
+                <tr
+                  key={index}
+                  className="bg-white border-b dark:bg-gray-800 dark:border-gray-700"
                 >
-                  {noteObj.note}
-                </td>
-                <td
-                  scope="row"
-                  className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
-                >
-                  {getAssignee(noteObj)}
-                </td>
-                <td className="px-6 py-4">
-                  {convertStatusText(noteObj.status)}
-                </td>
-                <td
-                  className={
-                    noteObj.status != 3 &&
-                    noteObj.dueDate &&
-                    noteObj.dueDate < moment().unix()
-                      ? "text-red-500"
-                      : ""
-                  }
-                >
-                  {noteObj.dueDate
-                    ? moment.unix(noteObj.dueDate).format("DD/MM/YYYY HH:mm")
-                    : ""}
-                </td>
-                <td className="px-6 py-4">
-                  <button
-                    onClick={() => {
-                      setIsEdit(true);
-                      setNote(noteObj.note);
-                      setStatus(noteObj.status);
-                      if (noteObj.dueDate) {
-                        setStartDate(
-                          new Date(
-                            moment
-                              .unix(noteObj.dueDate)
-                              .format("YYYY/MM/DD HH:mm")
-                          )
-                            ? new Date(
-                                moment
-                                  .unix(noteObj.dueDate)
-                                  .format("YYYY/MM/DD HH:mm")
-                              )
-                            : null
-                        );
-                      }
-                      setIdNote(noteObj.id);
-                      setSelectedUserId(noteObj.idAssignee);
-                    }}
-                    className="bg-blue-500 me-3 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full"
+                  <td
+                    scope="row"
+                    className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
                   >
-                    Chỉnh sửa
-                  </button>
-                  <button
-                    onClick={() => deleteNoteMethod(noteObj.id)}
-                    className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full"
+                    {noteObj.note}
+                  </td>
+                  <td
+                    scope="row"
+                    className="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white"
                   >
-                    Xóa
-                  </button>
-                </td>
-              </tr>
-            ))}
+                    {getAssignee(noteObj)}
+                  </td>
+                  <td className="px-6 py-4">
+                    {convertStatusText(noteObj.status)}
+                  </td>
+                  <td
+                    className={
+                      noteObj.status != 3 &&
+                      noteObj.dueDate &&
+                      noteObj.dueDate < moment().unix()
+                        ? "text-red-500"
+                        : ""
+                    }
+                  >
+                    {noteObj.dueDate
+                      ? moment.unix(noteObj.dueDate).format("DD/MM/YYYY HH:mm")
+                      : ""}
+                  </td>
+                  <td className="px-6 py-4">
+                    <button
+                      onClick={() => {
+                        setIsEdit(true);
+                        setNote(noteObj.note);
+                        setStatus(noteObj.status);
+                        if (noteObj.dueDate) {
+                          setStartDate(
+                            new Date(
+                              moment
+                                .unix(noteObj.dueDate)
+                                .format("YYYY/MM/DD HH:mm")
+                            )
+                              ? new Date(
+                                  moment
+                                    .unix(noteObj.dueDate)
+                                    .format("YYYY/MM/DD HH:mm")
+                                )
+                              : null
+                          );
+                        }
+                        setIdNote(noteObj.id);
+                        setSelectedUserId(noteObj.idAssignee);
+                      }}
+                      className="bg-blue-500 me-3 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full"
+                    >
+                      Chỉnh sửa
+                    </button>
+                    <button
+                      onClick={() => deleteNoteMethod(noteObj.id)}
+                      className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-full"
+                    >
+                      Xóa
+                    </button>
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
 

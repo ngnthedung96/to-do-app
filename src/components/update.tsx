@@ -175,11 +175,12 @@ export default function update({
         onChange={(e) => setSelectedUserId(Number(e.target.value))}
       >
         <option value="0">Chọn người thực hiện</option>
-        {listUser.map((user: User, index: number) => (
-          <option key={index} value={user.id}>
-            {user.name}
-          </option>
-        ))}
+        {Array.isArray(listUser) &&
+          listUser.map((user: User, index: number) => (
+            <option key={index} value={user.id}>
+              {user.name}
+            </option>
+          ))}
       </select>
       <select
         id="select-status"

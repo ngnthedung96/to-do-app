@@ -30,7 +30,7 @@ export const fetchListNote = createAsyncThunk(
   'notes/getListNote',
   async (queryString: string, thunkAPI) => {
     try{
-      const response = await axios.get(`${apiUrl}/api/notes/get-list` + queryString)
+      const response = await axios.get(`${apiUrl}/api/notes` + queryString)
       return response
     }catch(err:any){
       return err.response
@@ -63,7 +63,7 @@ export const editNote = createAsyncThunk(
         dueDate,
         status
       })
-      return{newData:requestBody, response} 
+      return{newData:requestBody, responseData:response} 
     }
     catch(err:any){
       return err.response
@@ -113,8 +113,13 @@ const Notes = createSlice({
     })
     // edit data
     builder.addCase(editNote.fulfilled, (state, action) => {
-      const {response,newData} = action.payload
-      const {error,message, data}:{error:boolean,message:string,data:NoteType} = response.data
+      const response = action.payload
+      const {responseData,newData} = response
+      if(!response && !newData){
+        const {error,message}:{error:boolean,message:string} = response.data
+        alert(message)
+      }
+      const {error,message, data}:{error:boolean,message:string,data:NoteType} = responseData.data
       if(!error){
         const idNew = newData.id
         const {listNote} = state.dataNotes
@@ -128,14 +133,19 @@ const Notes = createSlice({
     builder.addCase(deleteNote.fulfilled, (state, action) => {
       const response = action.payload
       const {id,responseData} = response
-      const {error,message}:{error:boolean,message:string} = responseData.data
-      if(!error){
-        const {listNote} = state.dataNotes
-        const indexNote = listNote.findIndex((el,index)=>{return el.id == id})
-        listNote.splice(indexNote,1)
-        state.dataNotes.totalNote--
-      }else{
+      if(!id && !responseData){
+        const {error,message}:{error:boolean,message:string} = response.data
         alert(message)
+      }else{
+        const {error,message}:{error:boolean,message:string} = responseData.data
+        if(!error){
+          const {listNote} = state.dataNotes
+          const indexNote = listNote.findIndex((el,index)=>{return el.id == id})
+          listNote.splice(indexNote,1)
+          state.dataNotes.totalNote--
+        }else{
+          alert(message)
+        }
       }
     })
   },
