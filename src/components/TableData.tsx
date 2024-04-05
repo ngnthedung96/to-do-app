@@ -188,9 +188,11 @@ export default function tableData({
                 </td>
                 <td
                   className={
-                    noteObj.dueDate && noteObj.dueDate > moment().unix()
-                      ? ""
-                      : "text-red-500"
+                    noteObj.status != 3 &&
+                    noteObj.dueDate &&
+                    noteObj.dueDate < moment().unix()
+                      ? "text-red-500"
+                      : ""
                   }
                 >
                   {noteObj.dueDate
