@@ -1,50 +1,46 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { RootState } from "../store";
 import axios from "axios";
+import { User } from "@/interfaces";
 // Define a type for the slice state
-interface initialState {
-  listUser: User[]
+interface userState {
+  listUser: User[];
 }
-interface User{
-  id:number,
-  name:string
-}
-const apiUrl =  process.env.NODE_ENV == "production"?"https://to-do-app-lyart-five.vercel.app":"http://localhost:3000"
 export const fetchAllUser = createAsyncThunk(
-  'notes/getAllUser',
-  async (payload,thunkAPI) => {
-    try{
-      const response = await axios.get(`${apiUrl}/api/users/get-all`)
-      return response
-    }catch(err:any){
-      return err.response
+  "notes/getAllUser",
+  async (payload, thunkAPI) => {
+    try {
+      const response = await axios.get(`${process.env.APP_URL}/api/users/`);
+      return response;
+    } catch (err: any) {
+      return err.response;
     }
-  },
-)
-export const initialState:initialState = {
-  listUser: [
-    
-  ],
+  }
+);
+export const initialState: userState = {
+  listUser: [],
 };
 
 const Users = createSlice({
   name: "Users",
   initialState,
-  reducers: {
-   
-  },
-  
+  reducers: {},
+
   extraReducers: (builder) => {
     builder.addCase(fetchAllUser.fulfilled, (state, action) => {
-      const response = action.payload
-      const {error,message, data}:{error:boolean,message:string,data:User[]} = response.data
-      if(!error){
-        state.listUser = data
-      }else{
-        alert(message)
+      const response = action.payload;
+      const {
+        error,
+        message,
+        data,
+      }: { error: boolean; message: string; data: User[] } = response.data;
+      if (!error) {
+        state.listUser = data;
+      } else {
+        alert(message);
       }
-    })
-  }
+    });
+  },
 });
 
 export const UserStore = (state: RootState) => state.Users; // get state

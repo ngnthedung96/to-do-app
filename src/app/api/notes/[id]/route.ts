@@ -1,114 +1,183 @@
-import { PrismaClient } from "@prisma/client";
-import { NextRequest, NextResponse } from 'next/server'
+import { PrismaClient, NoteStatus } from "@prisma/client";
+
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-// validation
+// ----------------------------------validation---------------------------
 // edit
 const editNoteScheme = z.object({
-  id:z.number().refine(async (id)=>{
+  id: z.number().refine(async (id) => {
     const note = await prisma.notes.findUnique({
       where: {
         id,
       },
-    })
-    if(!note){
-      return false
-    }
-    return true
+    });
+    return note ? true : false;
   }),
-  dueDate:z.number().optional(),
-  idAssignee: z.number().refine(async (data)=>{
-    const user = await prisma.users.findUnique({
-      where: {
-        id: data,
-      },
-    })
-    if(!user){
-      return false
-    }
-    return true
-  }),
+  dueDate: z.number().optional(),
+  arrIdAssignee: z.array(z.number()).nonempty(),
   note: z.string(),
-  status:z.number().refine((status)=>{
-    if(status<1 && status>3){
-      return false
-    }
-    return true
-  })
-})
+  status: z.string(),
+});
 // delete
 const deleteNoteScheme = z.object({
-  id:z.number().refine(async (id)=>{
+  id: z.number().refine(async (id) => {
     const note = await prisma.notes.findUnique({
       where: {
         id,
       },
-    })
-    if(!note){
-      return false
-    }
-    return true
+    });
+    return note ? true : false;
   }),
-})
-const prisma = new PrismaClient()
-export async function PUT(request: NextRequest, { params }: { params: { id: string }  }) {
-  try{
-    const res = await request.json()
-    const {note,
-      dueDate,
-      idAssignee,
-      status}:{
-        note:string,
-        dueDate:number|undefined,
-        idAssignee:number|undefined,
-        status:number|undefined
-      } = res
-    const id: number = Number(params.id);
-    const validation = await editNoteScheme.parseAsync({
-      id:id,
-      dueDate:dueDate?(dueDate):undefined,
-      idAssignee:idAssignee,
+});
+const prisma = new PrismaClient();
+// ------------------------------------method-------------------------------
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const res = await request.json();
+    const {
       note,
-      status:status
-    })
-    const specificNote = await prisma.notes.update({
-      where: {
-        id,
-      },
-      data:{
-        note,
-        dueDate:dueDate?dueDate:0,
-        idAssignee,
-        status
-      }
-    })
-    if(specificNote){
-      return NextResponse.json({error:false, status:200, message:"Thành công"}, {status:200})
-    }else{
-      return NextResponse.json({status:400,error:true, message:"Thất bại"}, {status:400})
-    }
-  }catch(err){
-    return NextResponse.json({status:400,error:true, message:"Có lỗi",errors:err}, {status:400})
-  }
- 
-}
-export async function DELETE(request: NextRequest, { params }: { params: { id: string }  }) {
-  try{
+      dueDate,
+      arrIdAssignee,
+      status,
+    }: {
+      note: string;
+      dueDate: number | undefined;
+      arrIdAssignee: number[];
+      status: NoteStatus;
+    } = res;
     const id: number = Number(params.id);
-    const validation = await editNoteScheme.parseAsync({
-      id:id,
-    })
+    const validation = await editNoteScheme.safeParseAsync({
+      id: id,
+      dueDate: dueDate ? dueDate : undefined,
+      arrIdAssignee: arrIdAssignee ? arrIdAssignee : undefined,
+      note,
+      status: status,
+    });
+    if (!validation.success) {
+      return NextResponse.json(
+        {
+          status: 402,
+          error: true,
+          message: "Dữ liệu không hợp lệ",
+          errors: validation.error,
+        },
+        { status: 402 }
+      );
+    }
+    const editNote = await prisma.$transaction(async (tx) => {
+      const usersOfNote = await prisma.noteUser.findMany({
+        where: {
+          idNote: id,
+        },
+      });
+      // check same user
+      for (let i = 0; i < usersOfNote.length; i++) {
+        const oldUser = usersOfNote[i];
+        const idOldUser = oldUser.idUser;
+        for (let j = 0; j < arrIdAssignee.length; j++) {
+          const idNewUser = arrIdAssignee[j];
+          if (idOldUser == idNewUser) {
+            usersOfNote.splice(i, 1);
+            i--;
+            arrIdAssignee.splice(j, 1);
+            j--;
+          }
+        }
+      }
+
+      const dataNote: any = {
+        note,
+        dueDate: dueDate ? dueDate : 0,
+        status,
+        noteUsers: {},
+      };
+
+      // old user
+      // ----- do sth with usersOfNote
+      if (usersOfNote.length) {
+        const arrIdOld = [];
+        for (let user of usersOfNote) {
+          const { id } = user;
+          arrIdOld.push(id);
+        }
+        const newNoteUser = await prisma.noteUser.deleteMany({
+          where: { id: { in: arrIdOld } },
+        });
+      }
+      // new user
+      // -----do sth with arridAssignee
+
+      if (arrIdAssignee.length) {
+        const newData = [];
+        for (let idAssignee of arrIdAssignee) {
+          newData.push({ idNote: id, idUser: idAssignee });
+        }
+        const newNoteUser = await prisma.noteUser.createMany({
+          data: newData,
+        });
+      }
+      const specificNote = await prisma.notes.update({
+        where: {
+          id,
+        },
+        data: {
+          note,
+          dueDate: dueDate ? dueDate : 0,
+          status,
+        },
+      });
+    });
+
+    return NextResponse.json(
+      { error: false, status: 200, message: "Thành công" },
+      { status: 200 }
+    );
+  } catch (err) {
+    console.log(err);
+    return NextResponse.json(
+      { status: 400, error: true, message: "Có lỗi", errors: err },
+      { status: 400 }
+    );
+  }
+}
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const id: number = Number(params.id);
+    const validation = await deleteNoteScheme.safeParseAsync({
+      id: id,
+    });
+    if (!validation.success) {
+      return NextResponse.json(
+        { status: 402, error: true, message: "Thiếu dữ liệu" },
+        { status: 402 }
+      );
+    }
     const deleteNote = await prisma.notes.delete({
       where: {
         id,
-      }
-    })
-    if(deleteNote){
-      return NextResponse.json({status:200,error:false, message:"Thành công"}, {status:200})
-    }else{
-      return NextResponse.json({status:400,error:true, message:"Thất bại"}, {status:400})
+      },
+    });
+    if (deleteNote) {
+      return NextResponse.json(
+        { status: 200, error: false, message: "Thành công" },
+        { status: 200 }
+      );
+    } else {
+      return NextResponse.json(
+        { status: 400, error: true, message: "Thất bại" },
+        { status: 400 }
+      );
     }
-  }
-  catch(err){
-    return NextResponse.json({status:400,error:true, message:"Có lỗi",errors:err}, {status:400})
+  } catch (err) {
+    return NextResponse.json(
+      { status: 400, error: true, message: "Có lỗi", errors: err },
+      { status: 400 }
+    );
   }
 }

@@ -20,6 +20,13 @@ const nextConfig = {
       },
     ];
   },
+  env: {
+    APP_URL:
+      process.env.NODE_ENV == "production"
+        ? process.env.APP_URL_PRODUCTION
+        : process.env.APP_URL_DEVELOPMENT,
+    NEXT_AUTH_SECRET: process.env.NEXTAUTH_URL,
+  },
 };
 
 export default nextConfig;

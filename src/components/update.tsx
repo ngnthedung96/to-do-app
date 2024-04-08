@@ -1,57 +1,47 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
+import axios from "axios";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import moment from "moment";
-import { produce } from "immer";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { UserStore } from "@/store/reducer/Users";
-import { editNote, addNote, NoteStore } from "../store/reducer/Notes";
-interface NoteType {
-  note: string;
-  status: number;
-  dueDate?: number;
-  idAssignee: number;
-}
+import { NoteStore, addNote, editNote } from "../store/reducer/Notes";
+import { User, NoteType, PagePagination, BodyNote } from "../interfaces";
+import { Select, Space } from "antd";
+import type { SelectProps } from "antd";
 
-interface User {
-  id: number;
-  name: string;
-}
 export default function update({
   isEdit,
   setIsEdit,
-  currentStatus,
-  setStatus,
-  currentIdNote,
-  setIdNote,
-  startDate,
-  setStartDate,
-  defaultNote,
-  setNote,
-  selectedUserId,
-  setSelectedUserId,
-  setPage,
+  bodyNote,
+  setBodyNote,
+  setPagePagination,
+  isLoading,
+  setIsLoading,
+  getListNote,
 }: {
   isEdit: boolean;
   setIsEdit: Function;
-  currentStatus: number;
-  setStatus: Function;
-  currentIdNote: number;
-  setIdNote: Function;
-  startDate: Date | null;
-  setStartDate: Function;
-  defaultNote: string;
-  setNote: Function;
-  selectedUserId: number;
-  setSelectedUserId: Function;
-  setPage: Function;
+  bodyNote: BodyNote;
+  setBodyNote: Function;
+  setPagePagination: Function;
+  isLoading: boolean;
+  setIsLoading: Function;
+  getListNote: Function;
 }) {
   // redux
   // state
   const { listUser } = useAppSelector(UserStore);
   const { dataNotes } = useAppSelector(NoteStore);
   const { listNote } = dataNotes;
+  const {
+    selectedUserId,
+    currentIdNote,
+    currentStatus,
+    defaultNote,
+    startDate,
+  } = bodyNote;
 
   const dispatch = useAppDispatch();
 
@@ -80,69 +70,174 @@ export default function update({
     </div>
   );
   // functions
-  function addNoteMethod(): void {
-    if (defaultNote && Number(selectedUserId) && Number(currentStatus)) {
-      const newNote = {
-        note: defaultNote,
-        idAssignee: Number(selectedUserId),
-        dueDate: startDate ? moment(new Date(startDate)).unix() : 0,
-        status: currentStatus,
-      };
-      dispatch(addNote(newNote));
-      setPage(1);
-      setNote("");
-      setStartDate(null);
-      setStatus(-1);
-      setSelectedUserId(0);
-    } else {
-      alert("Vui lòng nhập đẩy đủ ghi chú và người thực hiện");
+  async function addNoteMethod() {
+    try {
+      if (isLoading) {
+        return;
+      }
+      setIsLoading(true);
+      if (defaultNote && selectedUserId.length && currentStatus) {
+        const newNote: {
+          note: string;
+          arrIdAssignee: string[];
+          dueDate: number;
+          status: string;
+        } = {
+          note: defaultNote,
+          arrIdAssignee: selectedUserId,
+          dueDate: startDate ? moment(new Date(startDate)).unix() : 0,
+          status: currentStatus,
+        };
+        const response = await axios.post(
+          `${process.env.APP_URL}/api/notes`,
+          newNote
+        );
+        if (!response.data) {
+          alert("Có lỗi");
+        }
+        const {
+          error,
+          message,
+          data,
+        }: { error: boolean; message: string; data: NoteType } = response.data;
+        if (!error) {
+          setPagePagination((prevValue: PagePagination) => {
+            return { ...prevValue, page: 1 };
+          });
+          setBodyNote((prevValue: BodyNote) => {
+            return {
+              ...prevValue,
+              defaultNote: "",
+              startDate: null,
+              currentStatus: "",
+              selectedUserId: [],
+            };
+          });
+          getListNote();
+        } else {
+          alert(message);
+        }
+      } else {
+        alert("Vui lòng nhập đẩy đủ ghi chú và người thực hiện");
+      }
+      setIsLoading(false);
+    } catch (err: any) {
+      setIsLoading(false);
+      const errRes = err.response;
+      if (errRes) {
+        const errResData = errRes.data;
+        if (errResData.message) {
+          alert(errResData.message);
+        } else {
+          alert(errResData);
+        }
+      }
     }
   }
-  function editNoteMethod(
+  async function editNoteMethod(
     id: number,
     dueDate: Date | null,
-    status: number
-  ): void {
-    if (id >= 0 && defaultNote) {
-      const dateUnix = dueDate ? moment(new Date(dueDate)).unix() : 0;
-      dispatch(
-        editNote({
+    status: string
+  ) {
+    try {
+      if (isLoading) {
+        return;
+      }
+      setIsLoading(true);
+      if (id >= 0 && defaultNote) {
+        const dateUnix = dueDate ? moment(new Date(dueDate)).unix() : 0;
+        const newData: {
+          id: number;
+          note: string;
+          arrIdAssignee?: string[];
+          dueDate: number;
+          status: string;
+        } = {
           id,
           note: defaultNote,
-          idAssignee: selectedUserId,
+          arrIdAssignee: selectedUserId,
           dueDate: dateUnix,
           status,
-        })
-      );
-      setNote("");
-      setStatus(-1);
-      setIsEdit(false);
-      setStartDate(null);
-      setSelectedUserId(0);
-      setIdNote(-1);
-    } else {
-      alert("Vui lòng nhập đẩy đủ ghi chú");
+        };
+        const response = await axios.put(
+          `${process.env.APP_URL}/api/notes/` + id,
+          newData
+        );
+        if (!response.data) {
+          alert("Có lỗi");
+        }
+        const {
+          error,
+          message,
+        }: { error: boolean; message: string; data: NoteType } = response.data;
+
+        if (!error) {
+          setBodyNote((prevValue: BodyNote) => {
+            return {
+              ...prevValue,
+              currentIdNote: -1,
+              defaultNote: "",
+              startDate: null,
+              currentStatus: "",
+              selectedUserId: [],
+            };
+          });
+          setIsEdit(false);
+          setPagePagination((prevValue: PagePagination) => {
+            return { ...prevValue, page: 1 };
+          });
+          getListNote();
+        } else {
+          alert(message);
+        }
+      } else {
+        alert("Vui lòng nhập đẩy đủ ghi chú");
+      }
+      setIsLoading(false);
+    } catch (err: any) {
+      setIsLoading(false);
+      const errRes = err.response;
+      if (errRes) {
+        const errResData = errRes.data;
+        if (errResData.message) {
+          alert(errResData.message);
+        } else {
+          alert(errResData);
+        }
+      }
     }
   }
-  function deleteEdit() {
-    setNote("");
+  async function deleteEdit() {
     setIsEdit(false);
-    setSelectedUserId(0);
-    setStartDate(null);
-    setIdNote(-1);
+    setBodyNote((prevValue: BodyNote) => {
+      return {
+        ...prevValue,
+        defaultNote: "",
+        selectedUserId: 0,
+        startDate: null,
+        currentIdNote: 0,
+      };
+    });
   }
-  function checkValueSelectAssignee() {
-    if (selectedUserId > 0) {
-      return selectedUserId;
-    } else if (currentIdNote > 0) {
-      const note: NoteType | undefined = listNote.find((el, val) => {
-        return el.id == currentIdNote;
-      });
-      return note?.idAssignee;
-    } else {
-      return 0;
-    }
+  function convertListUser(listUser: User[]) {
+    const listOpt = listUser.map((user, index) => {
+      return {
+        value: user.id,
+        label: user.name,
+      };
+    });
+    return listOpt;
   }
+  const handleChange = (value: string[]) => {
+    setBodyNote((prevValue: BodyNote) => {
+      const newBodyNote = {
+        ...prevValue,
+        selectedUserId: value,
+      };
+      return newBodyNote;
+    });
+  };
+
   return (
     <div className="px-6 pt-4 pb-2 flex">
       <input
@@ -151,7 +246,14 @@ export default function update({
         placeholder="Ghi chú"
         aria-label="Ghi chú"
         value={defaultNote}
-        onChange={(e) => setNote(e.target.value)}
+        onChange={(e) =>
+          setBodyNote((prevValue: BodyNote) => {
+            return {
+              ...prevValue,
+              defaultNote: e.target.value,
+            };
+          })
+        }
         aria-describedby="basic-addon1"
       />
       <DatePicker
@@ -159,40 +261,43 @@ export default function update({
         wrapperClassName="datePicker "
         selected={startDate}
         onChange={(date: Date | null) => {
-          if (date) {
-            return setStartDate(date);
-          } else {
-            return setStartDate(null);
-          }
+          setBodyNote((prevValue: BodyNote) => {
+            return {
+              ...prevValue,
+              startDate: date ? date : null,
+            };
+          });
         }}
         showTimeSelect
         dateFormat="HH:mm dd/MM/yyyy"
       />
       <select
-        id="select-assignee"
-        className="me-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500  p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-        value={checkValueSelectAssignee()}
-        onChange={(e) => setSelectedUserId(Number(e.target.value))}
-      >
-        <option value="0">Chọn người thực hiện</option>
-        {Array.isArray(listUser) &&
-          listUser.map((user: User, index: number) => (
-            <option key={index} value={user.id}>
-              {user.name}
-            </option>
-          ))}
-      </select>
-      <select
         id="select-status"
         className="me-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500  p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
         value={currentStatus}
-        onChange={(e) => setStatus(Number(e.target.value))}
+        onChange={(e) =>
+          setBodyNote((prevValue: BodyNote) => {
+            return {
+              ...prevValue,
+              currentStatus: e.target.value,
+            };
+          })
+        }
       >
-        <option value="0">Chọn trạng thái</option>
-        <option value="1">Khởi tạo</option>
-        <option value="2">Đang thực hiện</option>
-        <option value="3">Đã hoàn thành</option>
+        <option value="">Chọn trạng thái</option>
+        <option value="CREATE">Khởi tạo</option>
+        <option value="PROCESS">Đang thực hiện</option>
+        <option value="DONE">Đã hoàn thành</option>
       </select>
+      <Select
+        mode="multiple"
+        allowClear
+        style={{ width: "100%" }}
+        placeholder="Chọn người thực hiện"
+        defaultValue={selectedUserId}
+        onChange={handleChange}
+        options={convertListUser(listUser)}
+      />
       {renderButton}
     </div>
   );
