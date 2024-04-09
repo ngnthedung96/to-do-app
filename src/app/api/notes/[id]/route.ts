@@ -2,6 +2,7 @@ import { PrismaClient, NoteStatus } from "@prisma/client";
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { getUser } from "../../auth/[...nextauth]/options";
 // ----------------------------------validation---------------------------
 // edit
 const editNoteScheme = z.object({
@@ -48,6 +49,14 @@ export async function PUT(
       arrIdAssignee: number[];
       status: NoteStatus;
     } = res;
+    // const sessionUser = await getUser();
+    // if (!sessionUser) {
+    //   return NextResponse.json(
+    //     { error: false, status: 401, message: "Unauthorized" },
+    //     { status: 401 }
+    //   );
+    // }
+    // const { user } = sessionUser;
     const id: number = Number(params.id);
     const validation = await editNoteScheme.safeParseAsync({
       id: id,
@@ -73,6 +82,13 @@ export async function PUT(
           idNote: id,
         },
       });
+      // const dataNote: any = {
+      //   note,
+      //   dueDate: dueDate ? dueDate : 0,
+      //   status,
+      //   noteUsers: {},
+      // };
+
       // check same user
       for (let i = 0; i < usersOfNote.length; i++) {
         const oldUser = usersOfNote[i];
@@ -87,14 +103,7 @@ export async function PUT(
           }
         }
       }
-
-      const dataNote: any = {
-        note,
-        dueDate: dueDate ? dueDate : 0,
-        status,
-        noteUsers: {},
-      };
-
+      const promiseArr = [];
       // old user
       // ----- do sth with usersOfNote
       if (usersOfNote.length) {
@@ -103,9 +112,10 @@ export async function PUT(
           const { id } = user;
           arrIdOld.push(id);
         }
-        const newNoteUser = await prisma.noteUser.deleteMany({
+        const newNoteUser = tx.noteUser.deleteMany({
           where: { id: { in: arrIdOld } },
         });
+        promiseArr.push(newNoteUser);
       }
       // new user
       // -----do sth with arridAssignee
@@ -115,11 +125,12 @@ export async function PUT(
         for (let idAssignee of arrIdAssignee) {
           newData.push({ idNote: id, idUser: idAssignee });
         }
-        const newNoteUser = await prisma.noteUser.createMany({
+        const newNoteUser = tx.noteUser.createMany({
           data: newData,
         });
+        promiseArr.push(newNoteUser);
       }
-      const specificNote = await prisma.notes.update({
+      const specificNote = tx.notes.update({
         where: {
           id,
         },
@@ -127,8 +138,12 @@ export async function PUT(
           note,
           dueDate: dueDate ? dueDate : 0,
           status,
+          // updatedBy: Number(user?.id),
+          updatedBy: Number(16),
         },
       });
+      promiseArr.push(specificNote);
+      const result = await Promise.all(promiseArr);
     });
 
     return NextResponse.json(
@@ -136,7 +151,6 @@ export async function PUT(
       { status: 200 }
     );
   } catch (err) {
-    console.log(err);
     return NextResponse.json(
       { status: 400, error: true, message: "Có lỗi", errors: err },
       { status: 400 }

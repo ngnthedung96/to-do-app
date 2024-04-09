@@ -20,10 +20,16 @@ export default function Notes() {
     dateRangeFilter: [null, null],
     currentStatusFilter: "",
     searchNote: "",
-    searchIdAssignee: 0,
+    searchIdAssignee: [],
+    searchUserCreate: [],
   });
-  const { dateRangeFilter, currentStatusFilter, searchNote, searchIdAssignee } =
-    filter;
+  const {
+    dateRangeFilter,
+    currentStatusFilter,
+    searchNote,
+    searchIdAssignee,
+    searchUserCreate,
+  } = filter;
   const [startDateFilter, endDateFilter] = dateRangeFilter;
 
   // pagination
@@ -73,8 +79,13 @@ export default function Notes() {
       if (currentStatusFilter) {
         queryString += `&status=${currentStatusFilter}`;
       }
-      if (Number(searchIdAssignee)) {
-        queryString += `&arrIdAssignee=[${searchIdAssignee}]`;
+      if (searchIdAssignee.length) {
+        queryString += `&arrIdAssignee=${JSON.stringify(searchIdAssignee)}`;
+        console.log(queryString);
+      }
+      if (searchUserCreate.length) {
+        queryString += `&arrUserCreate=${JSON.stringify(searchUserCreate)}`;
+        console.log(queryString);
       }
       const response = await axios.get(
         `${process.env.APP_URL}/api/notes` + queryString

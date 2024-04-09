@@ -109,7 +109,7 @@ export default function update({
               ...prevValue,
               defaultNote: "",
               startDate: null,
-              currentStatus: "",
+              currentStatus: "CREATE",
               selectedUserId: [],
             };
           });
@@ -175,17 +175,14 @@ export default function update({
           setBodyNote((prevValue: BodyNote) => {
             return {
               ...prevValue,
-              currentIdNote: -1,
+              currentIdNote: 0,
               defaultNote: "",
               startDate: null,
-              currentStatus: "",
+              currentStatus: "CREATE",
               selectedUserId: [],
             };
           });
           setIsEdit(false);
-          setPagePagination((prevValue: PagePagination) => {
-            return { ...prevValue, page: 1 };
-          });
           getListNote();
         } else {
           alert(message);
@@ -213,7 +210,7 @@ export default function update({
       return {
         ...prevValue,
         defaultNote: "",
-        selectedUserId: 0,
+        selectedUserId: [],
         startDate: null,
         currentIdNote: 0,
       };
@@ -239,66 +236,70 @@ export default function update({
   };
 
   return (
-    <div className="px-6 pt-4 pb-2 flex">
-      <input
-        type="text"
-        className="flex-1 inline-block rounded-e border border-solid border-neutral-200 bg-transparent bg-clip-padding px-3 py-[0.25rem] text-base font-normal leading-[1.6] text-surface outline-none transition duration-200 ease-in-out placeholder:text-neutral-500 focus:z-[3] focus:border-primary focus:shadow-inset focus:outline-none motion-reduce:transition-none dark:border-white/10 dark:text-white dark:placeholder:text-neutral-200 dark:autofill:shadow-autofill dark:focus:border-primary"
-        placeholder="Ghi chú"
-        aria-label="Ghi chú"
-        value={defaultNote}
-        onChange={(e) =>
-          setBodyNote((prevValue: BodyNote) => {
-            return {
-              ...prevValue,
-              defaultNote: e.target.value,
-            };
-          })
-        }
-        aria-describedby="basic-addon1"
-      />
-      <DatePicker
-        placeholderText={"Ngày hết hạn"}
-        wrapperClassName="datePicker "
-        selected={startDate}
-        onChange={(date: Date | null) => {
-          setBodyNote((prevValue: BodyNote) => {
-            return {
-              ...prevValue,
-              startDate: date ? date : null,
-            };
-          });
-        }}
-        showTimeSelect
-        dateFormat="HH:mm dd/MM/yyyy"
-      />
-      <select
-        id="select-status"
-        className="me-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500  p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-        value={currentStatus}
-        onChange={(e) =>
-          setBodyNote((prevValue: BodyNote) => {
-            return {
-              ...prevValue,
-              currentStatus: e.target.value,
-            };
-          })
-        }
-      >
-        <option value="">Chọn trạng thái</option>
-        <option value="CREATE">Khởi tạo</option>
-        <option value="PROCESS">Đang thực hiện</option>
-        <option value="DONE">Đã hoàn thành</option>
-      </select>
-      <Select
-        mode="multiple"
-        allowClear
-        style={{ width: "100%" }}
-        placeholder="Chọn người thực hiện"
-        defaultValue={selectedUserId}
-        onChange={handleChange}
-        options={convertListUser(listUser)}
-      />
-      {renderButton}
+    <div className="px-6 pt-4 pb-2 grid grid-cols-12 gap-4">
+      <div className="col-span-10 grid grid-cols-9 gap-4">
+        <input
+          type="text"
+          className="col-span-3 flex-1 inline-block rounded-e border border-solid border-neutral-200 bg-transparent bg-clip-padding px-3 py-[0.25rem] text-base font-normal leading-[1.6] text-surface outline-none transition duration-200 ease-in-out placeholder:text-neutral-500 focus:z-[3] focus:border-primary focus:shadow-inset focus:outline-none motion-reduce:transition-none dark:border-white/10 dark:text-white dark:placeholder:text-neutral-200 dark:autofill:shadow-autofill dark:focus:border-primary"
+          placeholder="Ghi chú"
+          aria-label="Ghi chú"
+          value={defaultNote}
+          onChange={(e) =>
+            setBodyNote((prevValue: BodyNote) => {
+              return {
+                ...prevValue,
+                defaultNote: e.target.value,
+              };
+            })
+          }
+          aria-describedby="basic-addon1"
+        />
+        <DatePicker
+          placeholderText={"Ngày hết hạn"}
+          wrapperClassName="datePicker col-span-1"
+          selected={startDate}
+          onChange={(date: Date | null) => {
+            setBodyNote((prevValue: BodyNote) => {
+              return {
+                ...prevValue,
+                startDate: date ? date : null,
+              };
+            });
+          }}
+          showTimeSelect
+          dateFormat="HH:mm dd/MM/yyyy"
+        />
+        <select
+          id="select-status"
+          className="col-span-2 me-2 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500  p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+          value={currentStatus}
+          onChange={(e) =>
+            setBodyNote((prevValue: BodyNote) => {
+              return {
+                ...prevValue,
+                currentStatus: e.target.value,
+              };
+            })
+          }
+        >
+          <option value="">Chọn trạng thái</option>
+          <option value="CREATE">Khởi tạo</option>
+          <option value="PROCESS">Đang thực hiện</option>
+          <option value="DONE">Đã hoàn thành</option>
+        </select>
+        <Select
+          className="col-span-2"
+          mode="multiple"
+          allowClear
+          style={{ width: "100%" }}
+          placeholder="Chọn người thực hiện"
+          defaultValue={selectedUserId}
+          value={selectedUserId}
+          onChange={handleChange}
+          options={convertListUser(listUser)}
+        />
+      </div>
+      <div className="col-span-2">{renderButton}</div>
     </div>
   );
 }

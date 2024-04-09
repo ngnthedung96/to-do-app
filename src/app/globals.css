@@ -31,10 +31,7 @@ body {
     text-wrap: balance;
   }
 }
-.datePicker {
-  width: 30%;
-  margin-right:20px ;
-}
+
 .datePicker input {
   width: 100%;
   padding-left: 0.75rem;

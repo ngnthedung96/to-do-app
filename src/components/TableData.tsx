@@ -8,6 +8,7 @@ import { UserStore } from "@/store/reducer/Users";
 import { NoteStore, deleteNote } from "@/store/reducer/Notes";
 import { PagePagination, NoteType, BodyNote } from "../interfaces";
 import { User } from "next-auth";
+import { Pagination, PaginationProps } from "antd";
 export default function tableData({
   setIsEdit,
   isEdit,
@@ -97,28 +98,11 @@ export default function tableData({
       return "Đã hoàn thành";
     }
   }
-  function nextPage() {
-    const end = Math.ceil(totalNote / limit);
-    if (page < end) {
-      const nextPage = page + 1;
-      setPagePagination((prevValue: PagePagination) => {
-        return { ...prevValue, page: nextPage };
-      });
-    }
-  }
-  function previousPage() {
-    if (page > 1) {
-      const previousPage = page - 1;
-      setPagePagination((prevValue: PagePagination) => {
-        return { ...prevValue, page: previousPage };
-      });
-    }
-  }
-  function goToPage(numberPage: number) {
-    setPagePagination((prevValue: PagePagination) => {
-      return { ...prevValue, page: numberPage };
+  const changePagination: PaginationProps["onChange"] = (pageAntd) => {
+    setPagePagination((prevValue: object) => {
+      return { ...prevValue, page: pageAntd };
     });
-  }
+  };
   function getUserFromNotes(note: NoteType) {
     const { noteUsers } = note;
     if (Array.isArray(noteUsers)) {
@@ -150,7 +134,7 @@ export default function tableData({
           value={limit}
           onChange={(e) =>
             setPagePagination((prevValue: PagePagination) => {
-              return { ...prevValue, limit: Number(e.target.value) };
+              return { page: 1, limit: Number(e.target.value) };
             })
           }
         >
@@ -173,6 +157,9 @@ export default function tableData({
               </th>
               <th scope="col" className="px-6 py-3">
                 Ngày hoàn thành
+              </th>
+              <th scope="col" className="px-6 py-3">
+                Tạo bởi
               </th>
               <th scope="col" className="px-6 py-3">
                 Quản lý
@@ -219,6 +206,7 @@ export default function tableData({
                       ? moment.unix(noteObj.dueDate).format("DD/MM/YYYY HH:mm")
                       : ""}
                   </td>
+                  <td className="px-6 py-4">{noteObj?.userCreate?.name}</td>
                   <td className="px-6 py-4">
                     <button
                       onClick={() => {
@@ -257,70 +245,12 @@ export default function tableData({
               ))}
           </tbody>
         </table>
-
-        <nav aria-label="Page navigation example" className="float float-right">
-          <ul className="flex items-center -space-x-px h-8 text-sm">
-            <li onClick={previousPage}>
-              <span className="flex items-center justify-center px-3 h-8 ms-0 leading-tight text-gray-500 bg-white border border-e-0 border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                <span className="sr-only">Previous</span>
-                <svg
-                  className="w-2.5 h-2.5 rtl:rotate-180"
-                  aria-hidden="true"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 6 10"
-                >
-                  <path
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M5 1 1 5l4 4"
-                  />
-                </svg>
-              </span>
-            </li>
-            {Array.from(Array(Math.ceil(totalNote / limit)), (e, i) => {
-              return (
-                <li
-                  key={i}
-                  onClick={() => {
-                    goToPage(i + 1);
-                  }}
-                >
-                  <span
-                    className={
-                      (page == i + 1 ? "bg-grey" : "bg-white") +
-                      " flex items-center justify-center px-3 h-8 ms-0 leading-tight text-gray-500  border border-e-0 border-gray-300  hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
-                    }
-                  >
-                    {i + 1}
-                  </span>
-                </li>
-              );
-            })}
-            <li onClick={nextPage}>
-              <span className="flex items-center justify-center px-3 h-8 leading-tight text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                <span className="sr-only">Next</span>
-                <svg
-                  className="w-2.5 h-2.5 rtl:rotate-180"
-                  aria-hidden="true"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 6 10"
-                >
-                  <path
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="m1 9 4-4-4-4"
-                  />
-                </svg>
-              </span>
-            </li>
-          </ul>
-        </nav>
+        <Pagination
+          current={page}
+          onChange={changePagination}
+          total={totalNote}
+          pageSize={limit}
+        />
       </div>
       <div
         className={

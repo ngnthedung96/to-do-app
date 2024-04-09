@@ -9,6 +9,7 @@ export interface NoteType {
   status: string;
   dueDate?: number;
   noteUsers?: [];
+  userCreate?: User;
 }
 
 export interface User {
@@ -29,7 +30,8 @@ export interface FilterNotes {
   dateRangeFilter: (Date | null)[];
   currentStatusFilter: string;
   searchNote: string;
-  searchIdAssignee: number;
+  searchIdAssignee: string[];
+  searchUserCreate: string[];
 }
 
 export interface PagePagination {

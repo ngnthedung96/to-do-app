@@ -1,7 +1,10 @@
 import { NoteStatus, PrismaClient } from "@prisma/client";
 import moment from "moment";
+import { getServerSession } from "next-auth";
+import { getSession } from "next-auth/react";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { getUser } from "../auth/[...nextauth]/options";
 // ----------------------------------------validation----------------------------
 // add
 const addNoteScheme = z.object({
@@ -30,6 +33,7 @@ const getListNoteScheme = z.object({
     }),
   status: z.string().optional(),
   arrIdAssignee: z.array(z.number()).optional(),
+  arrUserCreate: z.array(z.number()).optional(),
   note: z.string().optional(),
 });
 // --------------------------METHOD--------------------------
@@ -48,6 +52,14 @@ export async function POST(request: NextRequest, response: NextResponse) {
       arrIdAssignee: number[];
       status: NoteStatus;
     } = res;
+    const sessionUser = await getUser();
+    if (!sessionUser) {
+      return NextResponse.json(
+        { error: false, status: 401, message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+    const { user } = sessionUser;
     const formattedDueDate = Number(dueDate);
     const validation = await addNoteScheme.safeParseAsync({
       dueDate: formattedDueDate ? formattedDueDate : undefined,
@@ -66,33 +78,35 @@ export async function POST(request: NextRequest, response: NextResponse) {
         { status: 402 }
       );
     }
-    const createNote = await prisma.$transaction(async (tx) => {
-      const newNote = await tx.notes.create({
-        data: {
-          note,
-          status,
-          dueDate: dueDate ? dueDate : 0,
-        },
-      });
-      const { id } = newNote;
-      if (arrIdAssignee) {
-        for (let idAssignee of arrIdAssignee) {
-          const noteUser = await tx.noteUser.create({
-            data: {
-              idNote: id,
-              idUser: idAssignee,
-            },
-          });
-        }
+    const data: any = {
+      note,
+      status,
+      dueDate: dueDate ? dueDate : 0,
+      createdBy: Number(user?.id),
+      updatedBy: null,
+      noteUsers: {},
+    };
+    if (arrIdAssignee) {
+      const newData = [];
+      for (let idAssignee of arrIdAssignee) {
+        newData.push({ idUser: idAssignee });
       }
+      data.noteUsers.create = newData;
+    }
+    const newNote = await prisma.notes.create({
+      data,
+      include: {
+        noteUsers: true,
+      },
     });
     return NextResponse.json(
       { error: false, status: 200, message: "Thành công" },
       { status: 200 }
     );
   } catch (err) {
+    console.log(err);
     return NextResponse.json(
-      { status: 400, error: true, message: "Có lỗi" },
+      { status: 400, error: true, message: "Có lỗi", errors: err },
       { status: 400 }
     );
   }
@@ -106,6 +120,7 @@ export async function GET(request: NextRequest, response: NextResponse) {
     const dueDate: string | null = searchParams.get("dueDate");
     const status: string | null = searchParams.get("status");
     const arrIdAssignee = searchParams.get("arrIdAssignee");
+    const arrUserCreate = searchParams.get("arrUserCreate");
     const note: string | null = searchParams.get("note");
     // format
     const formattedLimit = limit ? Number(limit) : undefined;
@@ -113,6 +128,10 @@ export async function GET(request: NextRequest, response: NextResponse) {
     const formattedArrIdAssignee = arrIdAssignee
       ? JSON.parse(arrIdAssignee)
       : undefined;
+    const formattedArrUserCreate = arrUserCreate
+      ? JSON.parse(arrUserCreate)
+      : undefined;
+
     const validation = getListNoteScheme.safeParse({
       limit: formattedLimit ? formattedLimit : undefined,
       page: formattedPage ? formattedPage : undefined,
@@ -120,6 +139,9 @@ export async function GET(request: NextRequest, response: NextResponse) {
       status: status ? status : undefined,
       arrIdAssignee: formattedArrIdAssignee
         ? formattedArrIdAssignee
+        : undefined,
+      arrUserCreate: formattedArrUserCreate
+        ? formattedArrUserCreate
         : undefined,
       note: note ? note : undefined,
     });
@@ -137,7 +159,7 @@ export async function GET(request: NextRequest, response: NextResponse) {
     const currentTime = moment().unix();
     let objCondition: any = {};
     // condition
-    if (dueDate || status || arrIdAssignee || note) {
+    if (dueDate || status || arrIdAssignee || note || arrUserCreate) {
       // search note
       if (note) {
         objCondition.note = {
@@ -230,6 +252,11 @@ export async function GET(request: NextRequest, response: NextResponse) {
           },
         };
       }
+      if (arrUserCreate) {
+        objCondition.createdBy = {
+          in: formattedArrUserCreate,
+        };
+      }
     }
     const query: any = {
       where: objCondition,
@@ -243,6 +270,20 @@ export async function GET(request: NextRequest, response: NextResponse) {
                 email: true,
               },
             },
+          },
+        },
+        userCreate: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        userUpdate: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
           },
         },
       },
