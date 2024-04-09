@@ -1,36 +1,30 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import Filter from "@/components/filter";
-import TableData from "@/components/TableData";
-import Update from "@/components/update";
+import TableData from "./components/TableData";
+import Filter from "./components/filter";
+import Update from "./components/update";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
-import { NoteStore, fetchData } from "@/store/reducer/Notes";
+import { ProjectStore, fetchData } from "@/store/reducer/Projects";
 import { fetchAllUser } from "@/store/reducer/Users";
 import moment from "moment";
 import axios from "axios";
-import { DataNotes, BodyNote, FilterNotes, PagePagination } from "@/interfaces";
+import {
+  DataProjects,
+  PagePagination,
+  FilterProjects,
+  BodyProject,
+} from "@/interfaces";
 // next-auth
-export default function Notes() {
+export default function Projects() {
   // redux
-  const { dataNotes } = useAppSelector(NoteStore);
-  const { totalNote } = dataNotes;
+  const { dataProjects } = useAppSelector(ProjectStore);
+  const { totalProject } = dataProjects;
   const dispatch = useAppDispatch();
   // filter
-  const [filter, setFilter] = useState<FilterNotes>({
-    dateRangeFilter: [null, null],
-    currentStatusFilter: "",
-    searchNote: "",
-    searchIdAssignee: [],
-    searchUserCreate: [],
+  const [filter, setFilter] = useState<FilterProjects>({
+    searchProject: "",
   });
-  const {
-    dateRangeFilter,
-    currentStatusFilter,
-    searchNote,
-    searchIdAssignee,
-    searchUserCreate,
-  } = filter;
-  const [startDateFilter, endDateFilter] = dateRangeFilter;
+  const { searchProject } = filter;
 
   // pagination
   const [pagePagination, setPagePagination] = useState<PagePagination>({
@@ -42,13 +36,11 @@ export default function Notes() {
   const [isEdit, setIsEdit] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // bodyNote
-  const [bodyNote, setBodyNote] = useState<BodyNote>({
+  // bodyProject
+  const [bodyProject, setBodyProject] = useState<BodyProject>({
     selectedUserId: [],
-    currentIdNote: 0,
-    currentStatus: "CREATE",
-    defaultNote: "",
-    startDate: null,
+    currentIdProject: 0,
+    defaultProject: "",
   });
 
   useEffect(() => {
@@ -59,36 +51,18 @@ export default function Notes() {
     await dispatch(fetchAllUser());
   }
 
-  async function getListNote() {
+  async function getListProject() {
     try {
       if (isLoading) {
         return;
       }
       setIsLoading(true);
       let queryString: string = `?limit=${limit}&page=${page}`;
-      if (searchNote) {
-        queryString += `&note=${searchNote}`;
-      }
-      if (startDateFilter && endDateFilter) {
-        const startDate = moment(new Date(startDateFilter)).format(
-          "DD/MM/YYYY"
-        );
-        const endDate = moment(new Date(endDateFilter)).format("DD/MM/YYYY");
-        queryString += `&dueDate=${startDate}-${endDate}`;
-      }
-      if (currentStatusFilter) {
-        queryString += `&status=${currentStatusFilter}`;
-      }
-      if (searchIdAssignee.length) {
-        queryString += `&arrIdAssignee=${JSON.stringify(searchIdAssignee)}`;
-        console.log(queryString);
-      }
-      if (searchUserCreate.length) {
-        queryString += `&arrUserCreate=${JSON.stringify(searchUserCreate)}`;
-        console.log(queryString);
+      if (searchProject) {
+        queryString += `&project=${searchProject}`;
       }
       const response = await axios.get(
-        `${process.env.APP_URL}/api/notes` + queryString
+        `${process.env.APP_URL}/api/projects` + queryString
       );
       if (!response.data) {
         alert("Có lỗi");
@@ -97,7 +71,8 @@ export default function Notes() {
         error,
         message,
         data,
-      }: { error: boolean; message: string; data: DataNotes } = response.data;
+      }: { error: boolean; message: string; data: DataProjects } =
+        response.data;
       if (!error) {
         dispatch(fetchData(data));
       } else {
@@ -120,33 +95,33 @@ export default function Notes() {
   return (
     <div className="w-full rounded  shadow-lg bg-zinc-50">
       <div className="px-6 py-4">
-        <div className="font-bold text-xl mb-2">Todo ({totalNote})</div>
+        <div className="font-bold text-xl mb-2">Projects ({totalProject})</div>
       </div>
       <Filter
         filter={filter}
         setFilter={setFilter}
         pagePagination={pagePagination}
         setPagePagination={setPagePagination}
-        getListNote={getListNote}
+        getListProject={getListProject}
       />
       <Update
         isEdit={isEdit}
         setIsEdit={setIsEdit}
-        bodyNote={bodyNote}
-        setBodyNote={setBodyNote}
+        bodyProject={bodyProject}
+        setBodyProject={setBodyProject}
         setPagePagination={setPagePagination}
         isLoading={isLoading}
         setIsLoading={setIsLoading}
-        getListNote={getListNote}
+        getListProject={getListProject}
       />
 
       <TableData
         isEdit={isEdit}
         setIsEdit={setIsEdit}
-        setBodyNote={setBodyNote}
+        setBodyProject={setBodyProject}
         pagePagination={pagePagination}
         setPagePagination={setPagePagination}
-        getListNote={getListNote}
+        getListProject={getListProject}
         isLoading={isLoading}
         setIsLoading={setIsLoading}
       />

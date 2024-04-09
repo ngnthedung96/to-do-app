@@ -6,7 +6,7 @@ import axios from "axios";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { UserStore } from "@/store/reducer/Users";
 import { NoteStore, deleteNote } from "@/store/reducer/Notes";
-import { PagePagination, NoteType, BodyNote } from "../interfaces";
+import { PagePagination, NoteType, BodyNote } from "../../../interfaces";
 import { User } from "next-auth";
 import { Pagination, PaginationProps } from "antd";
 export default function tableData({
@@ -186,7 +186,7 @@ export default function tableData({
                     {noteObj.noteUsers &&
                       noteObj.noteUsers.map((noteUser: any, ind) => (
                         <span key={ind} className="block">
-                          {noteUser?.user.name}{" "}
+                          {noteUser?.projectUsers?.user.name}
                         </span>
                       ))}
                   </td>

@@ -6,29 +6,27 @@ import { getUser } from "../../auth/[...nextauth]/options";
 import moment from "moment";
 // ----------------------------------validation---------------------------
 // edit
-const editNoteScheme = z.object({
+const editProjectScheme = z.object({
   id: z.number().refine(async (id) => {
-    const note = await prisma.notes.findUnique({
+    const project = await prisma.projects.findUnique({
       where: {
         id,
       },
     });
-    return note ? true : false;
+    return project ? true : false;
   }),
-  dueDate: z.number().optional(),
-  arrIdProjectUser: z.array(z.number()).nonempty(),
-  note: z.string(),
-  status: z.string(),
+  arrIdAssignee: z.array(z.number()).nonempty(),
+  name: z.string(),
 });
 // delete
-const deleteNoteScheme = z.object({
+const deleteProjectScheme = z.object({
   id: z.number().refine(async (id) => {
-    const note = await prisma.notes.findUnique({
+    const project = await prisma.projects.findUnique({
       where: {
         id,
       },
     });
-    return note ? true : false;
+    return project ? true : false;
   }),
 });
 const prisma = new PrismaClient();
@@ -40,15 +38,11 @@ export async function PUT(
   try {
     const res = await request.json();
     const {
-      note,
-      dueDate,
-      arrIdProjectUser,
-      status,
+      name,
+      arrIdAssignee,
     }: {
-      note: string;
-      dueDate: number | undefined;
-      arrIdProjectUser: number[];
-      status: NoteStatus;
+      name: string;
+      arrIdAssignee: number[];
     } = res;
     const sessionUser = await getUser();
     if (!sessionUser) {
@@ -59,12 +53,10 @@ export async function PUT(
     }
     const { user } = sessionUser;
     const id: number = Number(params.id);
-    const validation = await editNoteScheme.safeParseAsync({
+    const validation = await editProjectScheme.safeParseAsync({
       id: id,
-      dueDate: dueDate ? dueDate : undefined,
-      arrIdProjectUser: arrIdProjectUser ? arrIdProjectUser : undefined,
-      note,
-      status: status,
+      arrIdAssignee: arrIdAssignee ? arrIdAssignee : undefined,
+      name,
     });
     if (!validation.success) {
       return NextResponse.json(
@@ -78,68 +70,62 @@ export async function PUT(
       );
     }
     const editNote = await prisma.$transaction(async (tx) => {
-      const projectUsersOfNote = await prisma.noteUser.findMany({
+      const usersOfproject = await prisma.projectUser.findMany({
         where: {
-          idNote: id,
+          idProject: id,
         },
       });
-      // const dataNote: any = {
-      //   note,
-      //   dueDate: dueDate ? dueDate : 0,
-      //   status,
-      //   noteUsers: {},
-      // };
-
       // check same user
-      for (let i = 0; i < projectUsersOfNote.length; i++) {
-        const oldUser = projectUsersOfNote[i];
-        const idOldUser = oldUser.idProjectUser;
-        for (let j = 0; j < arrIdProjectUser.length; j++) {
-          const idNewUser = arrIdProjectUser[j];
+      for (let i = 0; i < usersOfproject.length; i++) {
+        const oldUser = usersOfproject[i];
+        const idOldUser = oldUser.idUser;
+        for (let j = 0; j < arrIdAssignee.length; j++) {
+          const idNewUser = arrIdAssignee[j];
           if (idOldUser == idNewUser) {
-            projectUsersOfNote.splice(i, 1);
+            usersOfproject.splice(i, 1);
             i--;
-            arrIdProjectUser.splice(j, 1);
+            arrIdAssignee.splice(j, 1);
             j--;
           }
         }
       }
       const promiseArr = [];
       // old user
-      // ----- do sth with usersOfNote
-      if (projectUsersOfNote.length) {
+      // ----- do sth with usersOfproject
+      if (usersOfproject.length) {
         const arrIdOld = [];
-        for (let user of projectUsersOfNote) {
+        for (let user of usersOfproject) {
           const { id } = user;
           arrIdOld.push(id);
         }
-        const newNoteUser = tx.noteUser.deleteMany({
+        const newProjectUser = tx.projectUser.deleteMany({
           where: { id: { in: arrIdOld } },
         });
-        promiseArr.push(newNoteUser);
+        const newNoteUser = tx.noteUser.deleteMany({
+          where: { idProjectUser: { in: arrIdOld } },
+        });
+        promiseArr.push(newProjectUser, newNoteUser);
       }
       // new user
       // -----do sth with arridAssignee
 
-      if (arrIdProjectUser.length) {
+      if (arrIdAssignee.length) {
         const newData = [];
-        for (let idProjectUser of arrIdProjectUser) {
-          newData.push({ idNote: id, idProjectUser: idProjectUser });
+        for (let idAssignee of arrIdAssignee) {
+          newData.push({ idProject: id, idUser: idAssignee });
         }
-        const newNoteUser = tx.noteUser.createMany({
+        const newProjectUser = tx.projectUser.createMany({
           data: newData,
         });
-        promiseArr.push(newNoteUser);
+        promiseArr.push(newProjectUser);
       }
       const currentTime = moment().unix();
-      const specificNote = tx.notes.update({
+      const specificNote = tx.projects.update({
         where: {
           id,
         },
         data: {
-          note,
-          dueDate: dueDate ? dueDate : 0,
-          status,
+          name,
           updatedBy: Number(user?.id),
           updatedTime: currentTime,
         },
@@ -153,6 +139,7 @@ export async function PUT(
       { status: 200 }
     );
   } catch (err) {
+    console.log(err);
     return NextResponse.json(
       { status: 400, error: true, message: "Có lỗi", errors: err },
       { status: 400 }
@@ -165,7 +152,7 @@ export async function DELETE(
 ) {
   try {
     const id: number = Number(params.id);
-    const validation = await deleteNoteScheme.safeParseAsync({
+    const validation = await deleteProjectScheme.safeParseAsync({
       id: id,
     });
     if (!validation.success) {
@@ -175,12 +162,35 @@ export async function DELETE(
       );
     }
     const deleteNoteProcess = await prisma.$transaction(async (tx) => {
-      const deleteNoteUser = await prisma.noteUser.deleteMany({
+      const allProjectUser = await prisma.projectUser.findMany({
         where: {
-          idNote: id,
+          idProject: id,
+        },
+        select: {
+          id: true,
         },
       });
-      const deleteNote = await prisma.notes.delete({
+      if (allProjectUser) {
+        const arrIdProjectUser = [];
+        for (let projectUser of allProjectUser) {
+          arrIdProjectUser.push(projectUser.id);
+        }
+        if (arrIdProjectUser.length) {
+          const deleteNoteUser = await prisma.noteUser.deleteMany({
+            where: {
+              idProjectUser: {
+                in: arrIdProjectUser,
+              },
+            },
+          });
+        }
+      }
+      const deleteProjectUser = await prisma.projectUser.deleteMany({
+        where: {
+          idProject: id,
+        },
+      });
+      const deleteNote = await prisma.projects.deleteMany({
         where: {
           id,
         },

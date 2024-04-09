@@ -11,10 +11,18 @@ const addNoteScheme = z.object({
   dueDate: z.number().optional(),
   note: z.string(),
   status: z.string(),
-  arrIdAssignee: z.array(z.number()).nonempty(),
+  arrIdProjectUser: z.array(z.number()).nonempty(),
 });
 // get
 const getListNoteScheme = z.object({
+  idProject: z.number().refine(async (id) => {
+    const project = await prisma.projects.findUnique({
+      where: {
+        id,
+      },
+    });
+    return project ? true : false;
+  }),
   limit: z.number().optional(),
   page: z.number().optional(),
   dueDate: z
@@ -32,7 +40,7 @@ const getListNoteScheme = z.object({
       return true;
     }),
   status: z.string().optional(),
-  arrIdAssignee: z.array(z.number()).optional(),
+  arrIdProjectUser: z.array(z.number()).optional(),
   arrUserCreate: z.array(z.number()).optional(),
   note: z.string().optional(),
 });
@@ -44,12 +52,12 @@ export async function POST(request: NextRequest, response: NextResponse) {
     const {
       note,
       dueDate,
-      arrIdAssignee,
+      arrIdProjectUser,
       status,
     }: {
       note: string;
       dueDate: number;
-      arrIdAssignee: number[];
+      arrIdProjectUser: number[];
       status: NoteStatus;
     } = res;
     const sessionUser = await getUser();
@@ -65,7 +73,7 @@ export async function POST(request: NextRequest, response: NextResponse) {
       dueDate: formattedDueDate ? formattedDueDate : undefined,
       note,
       status: status ? status : undefined,
-      arrIdAssignee: arrIdAssignee ? arrIdAssignee : undefined,
+      arrIdProjectUser: arrIdProjectUser ? arrIdProjectUser : undefined,
     });
     if (!validation.success) {
       return NextResponse.json(
@@ -88,10 +96,10 @@ export async function POST(request: NextRequest, response: NextResponse) {
       noteUsers: {},
       createdTime: currentTime,
     };
-    if (arrIdAssignee) {
+    if (arrIdProjectUser) {
       const newData = [];
-      for (let idAssignee of arrIdAssignee) {
-        newData.push({ idUser: idAssignee });
+      for (let idProjectUser of arrIdProjectUser) {
+        newData.push({ idProjectUser });
       }
       data.noteUsers.create = newData;
     }
@@ -116,31 +124,42 @@ export async function POST(request: NextRequest, response: NextResponse) {
 
 export async function GET(request: NextRequest, response: NextResponse) {
   try {
+    const sessionUser = await getUser();
+    if (!sessionUser) {
+      return NextResponse.json(
+        { error: false, status: 401, message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+    const { user } = sessionUser;
     const searchParams = request.nextUrl.searchParams;
     const limit: string | null = searchParams.get("limit");
     const page: string | null = searchParams.get("page");
     const dueDate: string | null = searchParams.get("dueDate");
     const status: string | null = searchParams.get("status");
-    const arrIdAssignee = searchParams.get("arrIdAssignee");
+    const idProject: string | null = searchParams.get("idProject");
+    const arrIdProjectUser = searchParams.get("arrIdProjectUser");
     const arrUserCreate = searchParams.get("arrUserCreate");
     const note: string | null = searchParams.get("note");
     // format
     const formattedLimit = limit ? Number(limit) : undefined;
     const formattedPage = page ? Number(page) : undefined;
-    const formattedArrIdAssignee = arrIdAssignee
-      ? JSON.parse(arrIdAssignee)
+    const formattedIdProject = idProject ? Number(idProject) : undefined;
+    const formattedArrIdProjectUser = arrIdProjectUser
+      ? JSON.parse(arrIdProjectUser)
       : undefined;
     const formattedArrUserCreate = arrUserCreate
       ? JSON.parse(arrUserCreate)
       : undefined;
 
-    const validation = getListNoteScheme.safeParse({
+    const validation = await getListNoteScheme.safeParseAsync({
       limit: formattedLimit ? formattedLimit : undefined,
       page: formattedPage ? formattedPage : undefined,
       dueDate: dueDate ? dueDate : undefined,
       status: status ? status : undefined,
-      arrIdAssignee: formattedArrIdAssignee
-        ? formattedArrIdAssignee
+      idProject: formattedIdProject ? formattedIdProject : undefined,
+      arrIdProjectUser: formattedArrIdProjectUser
+        ? formattedArrIdProjectUser
         : undefined,
       arrUserCreate: formattedArrUserCreate
         ? formattedArrUserCreate
@@ -159,9 +178,19 @@ export async function GET(request: NextRequest, response: NextResponse) {
       );
     }
     const currentTime = moment().unix();
-    let objCondition: any = {};
+    let conditionNoteUsers: any = {
+      projectUsers: {
+        idUser: user.id,
+        idProject: formattedIdProject,
+      },
+    };
+    let objCondition: any = {
+      noteUsers: {
+        some: conditionNoteUsers,
+      },
+    };
     // condition
-    if (dueDate || status || arrIdAssignee || note || arrUserCreate) {
+    if (dueDate || status || arrIdProjectUser || note || arrUserCreate) {
       // search note
       if (note) {
         objCondition.note = {
@@ -245,12 +274,11 @@ export async function GET(request: NextRequest, response: NextResponse) {
         }
       }
       // search user
-      if (arrIdAssignee) {
-        objCondition.noteUsers = {
-          some: {
-            idUser: {
-              in: formattedArrIdAssignee,
-            },
+      if (arrIdProjectUser) {
+        conditionNoteUsers = {
+          ...conditionNoteUsers,
+          idProjectUser: {
+            in: formattedArrIdProjectUser,
           },
         };
       }
@@ -265,11 +293,15 @@ export async function GET(request: NextRequest, response: NextResponse) {
       include: {
         noteUsers: {
           include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
+            projectUsers: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  },
+                },
               },
             },
           },
@@ -316,6 +348,7 @@ export async function GET(request: NextRequest, response: NextResponse) {
           listNote,
           page: formattedPage,
           limit: formattedLimit,
+          objCondition,
         },
         error: false,
         status: 200,

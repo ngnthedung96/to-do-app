@@ -5,6 +5,13 @@ import bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
 export const options: NextAuthOptions = {
+  session: {
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    // Seconds - Throttle how frequently to write to database to extend a session.
+    // Use it to limit write operations. Set to 0 to always update the database.
+    // Note: This option is ignored if using JSON Web Tokens
+    updateAge: 24 * 60 * 60, // 24 hours
+  },
   providers: [
     CredentialsProvider({
       // The name to display on the sign in form (e.g. "Sign in with...")
@@ -18,14 +25,6 @@ export const options: NextAuthOptions = {
         email: {},
         password: {},
       },
-      // session: {
-      //   maxAge: 30 * 24 * 60 * 60, // 30 days
-
-      //   // Seconds - Throttle how frequently to write to database to extend a session.
-      //   // Use it to limit write operations. Set to 0 to always update the database.
-      //   // Note: This option is ignored if using JSON Web Tokens
-      //   updateAge: 24 * 60 * 60, // 24 hours
-      // },
       async authorize(credentials, req) {
         // Add logic here to look up the user from the credentials supplied
         if (!credentials) {
@@ -72,7 +71,6 @@ export const options: NextAuthOptions = {
     },
   },
   secret: process.env.NEXT_AUTH_SECRET,
-  session: undefined,
 };
 
 export const getUser = () => {

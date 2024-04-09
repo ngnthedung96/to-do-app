@@ -4,7 +4,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useAppSelector } from "@/store/hook";
 import { UserStore } from "@/store/reducer/Users";
-import { User, FilterNotes, PagePagination } from "../interfaces";
+import { User, FilterNotes, PagePagination } from "../../../interfaces";
 import { Select } from "antd";
 
 export default function filter({

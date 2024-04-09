@@ -13,14 +13,16 @@ datasource db {
 }
 
 model Users {
-  id         Int        @id @default(autoincrement())
-  name       String     @default("")
-  password   String     @default("")
-  salt       String     @default("")
-  email      String     @unique @default("")
-  noteUsers  NoteUser[]
-  noteCreate Notes[]    @relation("userCreateNote")
-  noteUpdate Notes[]    @relation("userUpdateNote")
+  id            Int           @id @default(autoincrement())
+  name          String        @default("")
+  password      String        @default("")
+  salt          String        @default("")
+  email         String        @unique @default("")
+  noteCreate    Notes[]       @relation("userCreateNote")
+  noteUpdate    Notes[]       @relation("userUpdateNote")
+  projectCreate Projects[]    @relation("userCreateProject")
+  projectUpdate Projects[]    @relation("userUpdateProject")
+  projectUsers  ProjectUser[] @relation()
 }
 
 model Notes {
@@ -37,12 +39,33 @@ model Notes {
   noteUsers   NoteUser[]
 }
 
+model Projects {
+  id           Int           @id @default(autoincrement())
+  name         String        @default("")
+  createdTime  Int           @default(0)
+  createdBy    Int           @default(0)
+  userCreate   Users         @relation("userCreateProject", fields: [createdBy], references: [id])
+  updatedTime  Int           @default(0)
+  updatedBy    Int?          @default(0)
+  userUpdate   Users?        @relation("userUpdateProject", fields: [updatedBy], references: [id])
+  projectUsers ProjectUser[] @relation()
+}
+
+model ProjectUser {
+  id        Int        @id @default(autoincrement())
+  idProject Int        @default(0)
+  project   Projects   @relation(fields: [idProject], references: [id])
+  idUser    Int        @default(0)
+  user      Users      @relation(fields: [idUser], references: [id])
+  noteUsers NoteUser[]
+}
+
 model NoteUser {
-  id     Int   @id @default(autoincrement())
-  idUser Int   @default(0)
-  user   Users @relation(fields: [idUser], references: [id])
-  idNote Int   @default(0)
-  note   Notes @relation(fields: [idNote], references: [id])
+  id            Int         @id @default(autoincrement())
+  idProjectUser Int         @default(0)
+  projectUsers  ProjectUser @relation(fields: [idProjectUser], references: [id])
+  idNote        Int         @default(0)
+  note          Notes       @relation(fields: [idNote], references: [id])
 }
 
 enum NoteStatus {

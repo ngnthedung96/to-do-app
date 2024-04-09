@@ -1,3 +1,4 @@
+// ----------------------------------NOTES-----------------------------------
 export interface DataNotes {
   totalNote: number;
   listNote: NoteType[];
@@ -37,4 +38,30 @@ export interface FilterNotes {
 export interface PagePagination {
   page: number;
   limit: number;
+}
+
+// ------------------------------------PROJECTS--------------------------------------------
+export interface ProjectType {
+  id: number;
+  name: string;
+  projectUsers?: [];
+  userCreate?: User;
+}
+export interface DataProjects {
+  totalProject: number;
+  listProject: ProjectType[];
+}
+export interface FilterProjects {
+  searchProject: string;
+}
+
+export interface Project {
+  id?: number;
+  name: string;
+}
+
+export interface BodyProject {
+  selectedUserId: string[];
+  currentIdProject: number;
+  defaultProject: "";
 }

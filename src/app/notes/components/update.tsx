@@ -6,8 +6,8 @@ import "react-datepicker/dist/react-datepicker.css";
 import moment from "moment";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { UserStore } from "@/store/reducer/Users";
-import { NoteStore, addNote, editNote } from "../store/reducer/Notes";
-import { User, NoteType, PagePagination, BodyNote } from "../interfaces";
+import { NoteStore } from "../../../store/reducer/Notes";
+import { User, NoteType, PagePagination, BodyNote } from "../../../interfaces";
 import { Select, Space } from "antd";
 import type { SelectProps } from "antd";
 
@@ -118,7 +118,7 @@ export default function update({
           alert(message);
         }
       } else {
-        alert("Vui lòng nhập đẩy đủ ghi chú và người thực hiện");
+        alert("Vui lòng nhập đẩy đủ ghi chú, trạng thái và người thực hiện");
       }
       setIsLoading(false);
     } catch (err: any) {
@@ -188,7 +188,7 @@ export default function update({
           alert(message);
         }
       } else {
-        alert("Vui lòng nhập đẩy đủ ghi chú");
+        alert("Vui lòng nhập đẩy đủ ghi chú, trạng thái và người thực hiện");
       }
       setIsLoading(false);
     } catch (err: any) {
