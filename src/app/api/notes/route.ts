@@ -78,6 +78,7 @@ export async function POST(request: NextRequest, response: NextResponse) {
         { status: 402 }
       );
     }
+    const currentTime = moment().unix();
     const data: any = {
       note,
       status,
@@ -85,6 +86,7 @@ export async function POST(request: NextRequest, response: NextResponse) {
       createdBy: Number(user?.id),
       updatedBy: null,
       noteUsers: {},
+      createdTime: currentTime,
     };
     if (arrIdAssignee) {
       const newData = [];

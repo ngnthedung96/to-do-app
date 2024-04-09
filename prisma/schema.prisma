@@ -24,15 +24,17 @@ model Users {
 }
 
 model Notes {
-  id         Int        @id @default(autoincrement())
-  note       String     @default("")
-  status     NoteStatus @default(CREATE)
-  dueDate    Int?       @default(0)
-  createdBy  Int        @default(0)
-  userCreate Users      @relation("userCreateNote", fields: [createdBy], references: [id])
-  updatedBy  Int?       @default(0)
-  userUpdate Users?     @relation("userUpdateNote", fields: [updatedBy], references: [id])
-  noteUsers  NoteUser[]
+  id          Int        @id @default(autoincrement())
+  note        String     @default("")
+  status      NoteStatus @default(CREATE)
+  dueDate     Int?       @default(0)
+  createdTime Int        @default(0)
+  createdBy   Int        @default(0)
+  userCreate  Users      @relation("userCreateNote", fields: [createdBy], references: [id])
+  updatedTime Int        @default(0)
+  updatedBy   Int?       @default(0)
+  userUpdate  Users?     @relation("userUpdateNote", fields: [updatedBy], references: [id])
+  noteUsers   NoteUser[]
 }
 
 model NoteUser {

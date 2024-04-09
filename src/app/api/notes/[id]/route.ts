@@ -3,6 +3,7 @@ import { PrismaClient, NoteStatus } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getUser } from "../../auth/[...nextauth]/options";
+import moment from "moment";
 // ----------------------------------validation---------------------------
 // edit
 const editNoteScheme = z.object({
@@ -49,14 +50,14 @@ export async function PUT(
       arrIdAssignee: number[];
       status: NoteStatus;
     } = res;
-    // const sessionUser = await getUser();
-    // if (!sessionUser) {
-    //   return NextResponse.json(
-    //     { error: false, status: 401, message: "Unauthorized" },
-    //     { status: 401 }
-    //   );
-    // }
-    // const { user } = sessionUser;
+    const sessionUser = await getUser();
+    if (!sessionUser) {
+      return NextResponse.json(
+        { error: false, status: 401, message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+    const { user } = sessionUser;
     const id: number = Number(params.id);
     const validation = await editNoteScheme.safeParseAsync({
       id: id,
@@ -130,6 +131,7 @@ export async function PUT(
         });
         promiseArr.push(newNoteUser);
       }
+      const currentTime = moment().unix();
       const specificNote = tx.notes.update({
         where: {
           id,
@@ -138,8 +140,8 @@ export async function PUT(
           note,
           dueDate: dueDate ? dueDate : 0,
           status,
-          // updatedBy: Number(user?.id),
-          updatedBy: Number(16),
+          updatedBy: Number(user?.id),
+          updatedTime: currentTime,
         },
       });
       promiseArr.push(specificNote);
