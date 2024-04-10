@@ -6,6 +6,7 @@ import { useAppSelector } from "@/store/hook";
 import { UserStore } from "@/store/reducer/Users";
 import { User, FilterNotes, PagePagination } from "../../../interfaces";
 import { Select } from "antd";
+import { ProjectUser } from "@prisma/client";
 
 export default function filter({
   filter,
@@ -13,12 +14,14 @@ export default function filter({
   getListNote,
   pagePagination,
   setPagePagination,
+  idProject,
 }: {
   filter: FilterNotes;
   setFilter: Function;
   getListNote: Function;
   pagePagination: PagePagination;
   setPagePagination: Function;
+  idProject: number;
 }) {
   const { listUser } = useAppSelector(UserStore);
   const {
@@ -50,6 +53,26 @@ export default function filter({
     });
   };
   function convertListUser(listUser: User[]) {
+    const listOpt = listUser.map((user, index) => {
+      const projectUsers = user.projectUsers;
+      const findedProjectUser: any = projectUsers?.find(
+        (projectUser: ProjectUser, index) => projectUser.idProject == idProject
+      );
+      if (findedProjectUser) {
+        return {
+          value: findedProjectUser.id,
+          label: user.name,
+        };
+      } else {
+        return {
+          value: 0,
+          label: user.name,
+        };
+      }
+    });
+    return listOpt;
+  }
+  function convertListUserCreate(listUser: User[]) {
     const listOpt = listUser.map((user, index) => {
       return {
         value: user.id,
@@ -141,7 +164,7 @@ export default function filter({
             };
           });
         }}
-        options={convertListUser(listUser)}
+        options={convertListUserCreate(listUser)}
       />
 
       <button

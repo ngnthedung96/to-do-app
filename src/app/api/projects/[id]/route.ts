@@ -104,7 +104,7 @@ export async function PUT(
         const newNoteUser = tx.noteUser.deleteMany({
           where: { idProjectUser: { in: arrIdOld } },
         });
-        promiseArr.push(newProjectUser, newNoteUser);
+        promiseArr.push(newNoteUser, newProjectUser);
       }
       // new user
       // -----do sth with arridAssignee

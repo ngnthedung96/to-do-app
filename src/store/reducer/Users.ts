@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { PayloadAction, createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { RootState } from "../store";
 import axios from "axios";
 import { User } from "@/interfaces";
@@ -6,17 +6,7 @@ import { User } from "@/interfaces";
 interface userState {
   listUser: User[];
 }
-export const fetchAllUser = createAsyncThunk(
-  "notes/getAllUser",
-  async (payload, thunkAPI) => {
-    try {
-      const response = await axios.get(`${process.env.APP_URL}/api/users/`);
-      return response;
-    } catch (err: any) {
-      return err.response;
-    }
-  }
-);
+
 export const initialState: userState = {
   listUser: [],
 };
@@ -24,24 +14,14 @@ export const initialState: userState = {
 const Users = createSlice({
   name: "Users",
   initialState,
-  reducers: {},
-
-  extraReducers: (builder) => {
-    builder.addCase(fetchAllUser.fulfilled, (state, action) => {
-      const response = action.payload;
-      const {
-        error,
-        message,
-        data,
-      }: { error: boolean; message: string; data: User[] } = response.data;
-      if (!error) {
-        state.listUser = data;
-      } else {
-        alert(message);
-      }
-    });
+  reducers: {
+    fetchDataUser(state, action: PayloadAction<User[]>) {
+      const data = action.payload;
+      state.listUser = data;
+    },
   },
 });
 
 export const UserStore = (state: RootState) => state.Users; // get state
+export const { fetchDataUser } = Users.actions;
 export default Users.reducer;

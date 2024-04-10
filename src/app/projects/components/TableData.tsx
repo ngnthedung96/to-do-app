@@ -176,7 +176,11 @@ export default function tableData({
                   <td className="px-6 py-4">{proObj?.userCreate?.name}</td>
                   <td className="px-6 py-4">
                     <button className="me-2 bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-full">
-                      <Link href={`/notes?idProject=${proObj.id}`}>Tasks</Link>
+                      <Link
+                        href={`/notes?idProject=${proObj.id}&nameProject=${proObj.name}`}
+                      >
+                        Tasks
+                      </Link>
                     </button>
 
                     <button

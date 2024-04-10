@@ -7,7 +7,13 @@ import moment from "moment";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
 import { UserStore } from "@/store/reducer/Users";
 import { NoteStore } from "../../../store/reducer/Notes";
-import { User, NoteType, PagePagination, BodyNote } from "../../../interfaces";
+import {
+  User,
+  NoteType,
+  PagePagination,
+  BodyNote,
+  ProjectUser,
+} from "../../../interfaces";
 import { Select, Space } from "antd";
 import type { SelectProps } from "antd";
 
@@ -20,6 +26,7 @@ export default function update({
   isLoading,
   setIsLoading,
   getListNote,
+  idProject,
 }: {
   isEdit: boolean;
   setIsEdit: Function;
@@ -29,6 +36,7 @@ export default function update({
   isLoading: boolean;
   setIsLoading: Function;
   getListNote: Function;
+  idProject: number;
 }) {
   // redux
   // state
@@ -79,12 +87,12 @@ export default function update({
       if (defaultNote && selectedUserId.length && currentStatus) {
         const newNote: {
           note: string;
-          arrIdAssignee: string[];
+          arrIdProjectUser: string[];
           dueDate: number;
           status: string;
         } = {
           note: defaultNote,
-          arrIdAssignee: selectedUserId,
+          arrIdProjectUser: selectedUserId,
           dueDate: startDate ? moment(new Date(startDate)).unix() : 0,
           status: currentStatus,
         };
@@ -149,13 +157,13 @@ export default function update({
         const newData: {
           id: number;
           note: string;
-          arrIdAssignee?: string[];
+          arrIdProjectUser?: string[];
           dueDate: number;
           status: string;
         } = {
           id,
           note: defaultNote,
-          arrIdAssignee: selectedUserId,
+          arrIdProjectUser: selectedUserId,
           dueDate: dateUnix,
           status,
         };
@@ -218,10 +226,21 @@ export default function update({
   }
   function convertListUser(listUser: User[]) {
     const listOpt = listUser.map((user, index) => {
-      return {
-        value: user.id,
-        label: user.name,
-      };
+      const projectUsers = user.projectUsers;
+      const findedProjectUser: any = projectUsers?.find(
+        (projectUser: ProjectUser, index) => projectUser.idProject == idProject
+      );
+      if (findedProjectUser) {
+        return {
+          value: findedProjectUser.id,
+          label: user.name,
+        };
+      } else {
+        return {
+          value: 0,
+          label: user.name,
+        };
+      }
     });
     return listOpt;
   }

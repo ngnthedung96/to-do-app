@@ -4,7 +4,23 @@ import { z } from "zod";
 const addUserScheme = z.object({
   name: z.string(),
 });
-
+const getListUserScheme = z.object({
+  idProject: z
+    .number()
+    .optional()
+    .refine(async (id) => {
+      if (id) {
+        const project = await prisma.projects.findUnique({
+          where: {
+            id,
+          },
+        });
+        return project ? true : false;
+      } else {
+        return true;
+      }
+    }),
+});
 const prisma = new PrismaClient();
 export async function POST(request: NextRequest, response: NextResponse) {
   const res = await request.json();
@@ -35,7 +51,40 @@ export async function POST(request: NextRequest, response: NextResponse) {
 }
 
 export async function GET(request: NextRequest, response: NextResponse) {
-  const data = await prisma.users.findMany();
+  const searchParams = request.nextUrl.searchParams;
+  const idProject: string | null = searchParams.get("idProject");
+  const formattedIdProject = idProject ? Number(idProject) : undefined;
+  const validation = await getListUserScheme.safeParseAsync({
+    idProject: formattedIdProject ? formattedIdProject : undefined,
+  });
+  if (!validation.success) {
+    return NextResponse.json(
+      {
+        status: 402,
+        error: true,
+        message: "Dữ liệu không hợp lệ",
+        errors: validation.error,
+      },
+      { status: 402 }
+    );
+  }
+  let objCondition: any = {};
+  if (idProject) {
+    objCondition = {
+      ...objCondition,
+      projectUsers: {
+        some: {
+          idProject: formattedIdProject,
+        },
+      },
+    };
+  }
+  const data = await prisma.users.findMany({
+    where: objCondition,
+    include: {
+      projectUsers: true,
+    },
+  });
 
   return NextResponse.json(
     { data: data, error: false, status: 200, message: "Thành công" },

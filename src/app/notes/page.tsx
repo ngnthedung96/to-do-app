@@ -4,18 +4,33 @@ import Filter from "@/app/notes/components/filter";
 import TableData from "@/app/notes/components/TableData";
 import Update from "@/app/notes/components/update";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
-import { NoteStore, fetchData } from "@/store/reducer/Notes";
-import { fetchAllUser } from "@/store/reducer/Users";
+import { NoteStore, fetchDataNote } from "@/store/reducer/Notes";
 import moment from "moment";
 import axios from "axios";
-import { DataNotes, BodyNote, FilterNotes, PagePagination } from "@/interfaces";
+import {
+  DataNotes,
+  BodyNote,
+  FilterNotes,
+  PagePagination,
+  User,
+} from "@/interfaces";
 import { useRouter } from "next/router";
+import { fetchDataUser } from "@/store/reducer/Users";
 // next-auth
 export default function Notes({
   searchParams,
 }: {
   searchParams?: { [key: string]: string | string[] | undefined };
 }) {
+  const idProject = searchParams?.idProject;
+  const nameProject = searchParams?.nameProject;
+  if (!idProject) {
+    const router = useRouter();
+    router.push("/");
+    alert("Không tìm thấy dự án");
+    return;
+  }
+  const formattedIdProject = Number(idProject);
   // redux
   const { dataNotes } = useAppSelector(NoteStore);
   const { totalNote } = dataNotes;
@@ -57,12 +72,46 @@ export default function Notes({
   });
 
   useEffect(() => {
-    getAllUser();
-    getListNote();
+    getUserOfProject();
   }, []);
 
-  async function getAllUser() {
-    await dispatch(fetchAllUser());
+  async function getUserOfProject() {
+    try {
+      if (isLoading) {
+        return;
+      }
+      setIsLoading(true);
+      const response = await axios.get(`${process.env.APP_URL}/api/users`, {
+        params: {
+          idProject,
+        },
+      });
+      if (!response.data) {
+        alert("Có lỗi");
+      }
+      const {
+        error,
+        message,
+        data,
+      }: { error: boolean; message: string; data: User[] } = response.data;
+      if (!error) {
+        dispatch(fetchDataUser(data));
+      } else {
+        alert(message);
+      }
+      setIsLoading(false);
+    } catch (err: any) {
+      setIsLoading(false);
+      const errRes = err.response;
+      if (errRes) {
+        const errResData = errRes.data;
+        if (errResData.message) {
+          alert(errResData.message);
+        } else {
+          alert(errResData);
+        }
+      }
+    }
   }
 
   async function getListNote() {
@@ -71,35 +120,34 @@ export default function Notes({
         return;
       }
       setIsLoading(true);
-      const idProject = searchParams?.idProject;
-      if (!idProject) {
-        const router = useRouter();
-        router.push("/");
-        alert("Không tìm thấy dự án");
-      }
+      const objParam: any = {
+        limit,
+        page,
+        idProject,
+      };
       let queryString: string = `?limit=${limit}&page=${page}&idProject=${idProject}`;
       if (searchNote) {
-        queryString += `&note=${searchNote}`;
+        objParam.note = searchNote;
       }
       if (startDateFilter && endDateFilter) {
         const startDate = moment(new Date(startDateFilter)).format(
           "DD/MM/YYYY"
         );
         const endDate = moment(new Date(endDateFilter)).format("DD/MM/YYYY");
-        queryString += `&dueDate=${startDate}-${endDate}`;
+        objParam.dueDate = `${startDate}-${endDate}`;
       }
       if (currentStatusFilter) {
-        queryString += `&status=${currentStatusFilter}`;
+        objParam.status = currentStatusFilter;
       }
       if (searchIdAssignee.length) {
-        queryString += `&arrIdAssignee=${JSON.stringify(searchIdAssignee)}`;
+        objParam.arrIdProjectUser = JSON.stringify(searchIdAssignee);
       }
       if (searchUserCreate.length) {
-        queryString += `&arrUserCreate=${JSON.stringify(searchUserCreate)}`;
+        objParam.arrUserCreate = JSON.stringify(searchUserCreate);
       }
-      const response = await axios.get(
-        `${process.env.APP_URL}/api/notes` + queryString
-      );
+      const response = await axios.get(`${process.env.APP_URL}/api/notes`, {
+        params: objParam,
+      });
       if (!response.data) {
         alert("Có lỗi");
       }
@@ -109,7 +157,7 @@ export default function Notes({
         data,
       }: { error: boolean; message: string; data: DataNotes } = response.data;
       if (!error) {
-        dispatch(fetchData(data));
+        dispatch(fetchDataNote(data));
       } else {
         alert(message);
       }
@@ -128,40 +176,41 @@ export default function Notes({
     }
   }
   return (
-    <main className="flex min-h-screen flex-col justify-center p-24">
-      <div className="w-full rounded  shadow-lg bg-zinc-50">
-        <div className="px-6 py-4">
-          <div className="font-bold text-xl mb-2">Todo ({totalNote})</div>
-        </div>
-        <Filter
-          filter={filter}
-          setFilter={setFilter}
-          pagePagination={pagePagination}
-          setPagePagination={setPagePagination}
-          getListNote={getListNote}
-        />
-        <Update
-          isEdit={isEdit}
-          setIsEdit={setIsEdit}
-          bodyNote={bodyNote}
-          setBodyNote={setBodyNote}
-          setPagePagination={setPagePagination}
-          isLoading={isLoading}
-          setIsLoading={setIsLoading}
-          getListNote={getListNote}
-        />
-
-        <TableData
-          isEdit={isEdit}
-          setIsEdit={setIsEdit}
-          setBodyNote={setBodyNote}
-          pagePagination={pagePagination}
-          setPagePagination={setPagePagination}
-          getListNote={getListNote}
-          isLoading={isLoading}
-          setIsLoading={setIsLoading}
-        />
+    <div className="w-full rounded  shadow-lg bg-zinc-50">
+      <div className="px-6 py-4">
+        <div className="font-bold text-2xl mb-2"> {nameProject}</div>
+        <div className="font-bold text-xl mb-2"> Tasks ({totalNote})</div>
       </div>
-    </main>
+      <Filter
+        filter={filter}
+        setFilter={setFilter}
+        pagePagination={pagePagination}
+        setPagePagination={setPagePagination}
+        getListNote={getListNote}
+        idProject={formattedIdProject}
+      />
+      <Update
+        isEdit={isEdit}
+        setIsEdit={setIsEdit}
+        bodyNote={bodyNote}
+        setBodyNote={setBodyNote}
+        setPagePagination={setPagePagination}
+        isLoading={isLoading}
+        setIsLoading={setIsLoading}
+        getListNote={getListNote}
+        idProject={formattedIdProject}
+      />
+
+      <TableData
+        isEdit={isEdit}
+        setIsEdit={setIsEdit}
+        setBodyNote={setBodyNote}
+        pagePagination={pagePagination}
+        setPagePagination={setPagePagination}
+        getListNote={getListNote}
+        isLoading={isLoading}
+        setIsLoading={setIsLoading}
+      />
+    </div>
   );
 }

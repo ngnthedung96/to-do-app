@@ -4,8 +4,8 @@ import TableData from "./components/TableData";
 import Filter from "./components/filter";
 import Update from "./components/update";
 import { useAppDispatch, useAppSelector } from "@/store/hook";
-import { ProjectStore, fetchData } from "@/store/reducer/Projects";
-import { fetchAllUser } from "@/store/reducer/Users";
+import { ProjectStore, fetchDataProject } from "@/store/reducer/Projects";
+import { fetchDataUser } from "@/store/reducer/Users";
 import moment from "moment";
 import axios from "axios";
 import {
@@ -13,6 +13,7 @@ import {
   PagePagination,
   FilterProjects,
   BodyProject,
+  User,
 } from "@/interfaces";
 // next-auth
 export default function Projects() {
@@ -48,7 +49,38 @@ export default function Projects() {
   }, []);
 
   async function getAllUser() {
-    await dispatch(fetchAllUser());
+    try {
+      if (isLoading) {
+        return;
+      }
+      setIsLoading(true);
+      const response = await axios.get(`${process.env.APP_URL}/api/users/`);
+      if (!response.data) {
+        alert("Có lỗi");
+      }
+      const {
+        error,
+        message,
+        data,
+      }: { error: boolean; message: string; data: User[] } = response.data;
+      if (!error) {
+        dispatch(fetchDataUser(data));
+      } else {
+        alert(message);
+      }
+      setIsLoading(false);
+    } catch (err: any) {
+      setIsLoading(false);
+      const errRes = err.response;
+      if (errRes) {
+        const errResData = errRes.data;
+        if (errResData.message) {
+          alert(errResData.message);
+        } else {
+          alert(errResData);
+        }
+      }
+    }
   }
 
   async function getListProject() {
@@ -57,13 +89,16 @@ export default function Projects() {
         return;
       }
       setIsLoading(true);
-      let queryString: string = `?limit=${limit}&page=${page}`;
+      const objParam: any = {
+        limit,
+        page,
+      };
       if (searchProject) {
-        queryString += `&project=${searchProject}`;
+        objParam.project = searchProject;
       }
-      const response = await axios.get(
-        `${process.env.APP_URL}/api/projects` + queryString
-      );
+      const response = await axios.get(`${process.env.APP_URL}/api/projects`, {
+        params: objParam,
+      });
       if (!response.data) {
         alert("Có lỗi");
       }
@@ -74,7 +109,7 @@ export default function Projects() {
       }: { error: boolean; message: string; data: DataProjects } =
         response.data;
       if (!error) {
-        dispatch(fetchData(data));
+        dispatch(fetchDataProject(data));
       } else {
         alert(message);
       }

@@ -17,6 +17,7 @@ export interface User {
   id?: number;
   name: string;
   email: string;
+  projectUsers?: [];
 }
 
 export interface BodyNote {
@@ -64,4 +65,11 @@ export interface BodyProject {
   selectedUserId: string[];
   currentIdProject: number;
   defaultProject: "";
+}
+
+// -------------------------project user--------------------
+export interface ProjectUser {
+  id: number;
+  idUser: number;
+  idProject: number;
 }

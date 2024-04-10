@@ -17,7 +17,7 @@ const Notes = createSlice({
   name: "Notes",
   initialState,
   reducers: {
-    fetchData(state, action: PayloadAction<DataNotes>) {
+    fetchDataNote(state, action: PayloadAction<DataNotes>) {
       const data = action.payload;
       state.dataNotes = data;
     },
@@ -49,5 +49,5 @@ const Notes = createSlice({
 });
 
 export const NoteStore = (state: RootState) => state.Notes; // get state
-export const { fetchData, addNote, editNote, deleteNote } = Notes.actions;
+export const { fetchDataNote, addNote, editNote, deleteNote } = Notes.actions;
 export default Notes.reducer;

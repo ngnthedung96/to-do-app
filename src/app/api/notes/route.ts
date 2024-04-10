@@ -178,27 +178,85 @@ export async function GET(request: NextRequest, response: NextResponse) {
       );
     }
     const currentTime = moment().unix();
+
+    // ------------------------condition------------------------
     let conditionNoteUsers: any = {
       projectUsers: {
-        idUser: user.id,
+        // idUser: user.id,
         idProject: formattedIdProject,
       },
     };
+
+    // search user
+    if (arrIdProjectUser) {
+      conditionNoteUsers = {
+        ...conditionNoteUsers,
+        idProjectUser: {
+          in: formattedArrIdProjectUser,
+        },
+      };
+    }
     let objCondition: any = {
       noteUsers: {
         some: conditionNoteUsers,
       },
     };
-    // condition
-    if (dueDate || status || arrIdProjectUser || note || arrUserCreate) {
-      // search note
-      if (note) {
-        objCondition.note = {
-          contains: note,
-        };
+    // date and status
+    if (status == "DUEDATE" && dueDate) {
+      const dateArr = dueDate.split("-");
+      const startDate = dateArr[0];
+      const formattedStartDate = moment(startDate, "DD/MM/YYYY")
+        .startOf("days")
+        .unix();
+      const endDate = dateArr[1];
+      const formattedEndDate = moment(endDate, "DD/MM/YYYY")
+        .endOf("days")
+        .unix();
+      objCondition = {
+        ...objCondition,
+        AND: [
+          {
+            NOT: {
+              dueDate: 0,
+            },
+          },
+          {
+            NOT: {
+              status: "DONE",
+            },
+          },
+          { dueDate: { lte: Number(currentTime) } },
+          { dueDate: { gte: Number(formattedStartDate) } },
+        ],
+      };
+    } else {
+      if (status) {
+        if (status == "DUEDATE") {
+          objCondition = {
+            ...objCondition,
+            AND: [
+              {
+                NOT: {
+                  dueDate: 0,
+                },
+              },
+              {
+                NOT: {
+                  status: "DONE",
+                },
+              },
+              {
+                dueDate: {
+                  lt: currentTime,
+                },
+              },
+            ],
+          };
+        } else if (status != "DUEDATE") {
+          objCondition.status = status;
+        }
       }
-      // date and status
-      if (status == "DUEDATE" && dueDate) {
+      if (dueDate) {
         const dateArr = dueDate.split("-");
         const startDate = dateArr[0];
         const formattedStartDate = moment(startDate, "DD/MM/YYYY")
@@ -208,86 +266,29 @@ export async function GET(request: NextRequest, response: NextResponse) {
         const formattedEndDate = moment(endDate, "DD/MM/YYYY")
           .endOf("days")
           .unix();
-        objCondition = {
-          ...objCondition,
-          AND: [
-            {
-              NOT: {
-                dueDate: 0,
-              },
-            },
-            {
-              NOT: {
-                status: "DONE",
-              },
-            },
-            { dueDate: { lte: Number(currentTime) } },
-            { dueDate: { gte: Number(formattedStartDate) } },
-          ],
-        };
-      } else {
-        if (status) {
-          if (status == "DUEDATE") {
-            objCondition = {
-              ...objCondition,
-              AND: [
-                {
-                  NOT: {
-                    dueDate: 0,
-                  },
-                },
-                {
-                  NOT: {
-                    status: "DONE",
-                  },
-                },
-                {
-                  dueDate: {
-                    lt: currentTime,
-                  },
-                },
-              ],
-            };
-          } else if (status != "DUEDATE") {
-            objCondition.status = status;
-          }
+        if (startDate && endDate) {
+          objCondition = {
+            ...objCondition,
+            AND: [
+              { dueDate: { lte: Number(formattedEndDate) } },
+              { dueDate: { gte: Number(formattedStartDate) } },
+            ],
+          };
         }
-        if (dueDate) {
-          const dateArr = dueDate.split("-");
-          const startDate = dateArr[0];
-          const formattedStartDate = moment(startDate, "DD/MM/YYYY")
-            .startOf("days")
-            .unix();
-          const endDate = dateArr[1];
-          const formattedEndDate = moment(endDate, "DD/MM/YYYY")
-            .endOf("days")
-            .unix();
-          if (startDate && endDate) {
-            objCondition = {
-              ...objCondition,
-              AND: [
-                { dueDate: { lte: Number(formattedEndDate) } },
-                { dueDate: { gte: Number(formattedStartDate) } },
-              ],
-            };
-          }
-        }
-      }
-      // search user
-      if (arrIdProjectUser) {
-        conditionNoteUsers = {
-          ...conditionNoteUsers,
-          idProjectUser: {
-            in: formattedArrIdProjectUser,
-          },
-        };
-      }
-      if (arrUserCreate) {
-        objCondition.createdBy = {
-          in: formattedArrUserCreate,
-        };
       }
     }
+    // search note
+    if (note) {
+      objCondition.note = {
+        contains: note,
+      };
+    }
+    if (arrUserCreate) {
+      objCondition.createdBy = {
+        in: formattedArrUserCreate,
+      };
+    }
+
     const query: any = {
       where: objCondition,
       include: {

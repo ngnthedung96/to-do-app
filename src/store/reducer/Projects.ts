@@ -17,7 +17,7 @@ const Projects = createSlice({
   name: "Projects",
   initialState,
   reducers: {
-    fetchData(state, action: PayloadAction<DataProjects>) {
+    fetchDataProject(state, action: PayloadAction<DataProjects>) {
       const data = action.payload;
       state.dataProjects = data;
     },
@@ -49,6 +49,6 @@ const Projects = createSlice({
 });
 
 export const ProjectStore = (state: RootState) => state.Projects; // get state
-export const { fetchData, addProject, editProject, deleteProject } =
+export const { fetchDataProject, addProject, editProject, deleteProject } =
   Projects.actions;
 export default Projects.reducer;

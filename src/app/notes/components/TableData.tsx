@@ -109,12 +109,12 @@ export default function tableData({
       return noteUsers.map(
         (
           noteUser: {
-            idUser: number;
+            idProjectUser: number;
             user: User;
           },
           index
         ) => {
-          return noteUser.idUser;
+          return noteUser.idProjectUser;
         }
       );
     }
